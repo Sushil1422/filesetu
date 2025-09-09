@@ -1,0 +1,262 @@
+.admin-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  width: 250px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 1.5rem;
+}
+
+.sidebar-header p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.sidebar-nav li {
+  padding: 15px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-nav li:hover {
+  background-color: rgba(255,255,255,0.1);
+  border-left-color: rgba(255,255,255,0.5);
+}
+
+.sidebar-nav li.active {
+  background-color: rgba(255,255,255,0.2);
+  border-left-color: white;
+}
+
+.sidebar-nav .icon {
+  margin-right: 12px;
+  font-size: 1.2rem;
+}
+
+.sidebar-nav .text {
+  font-weight: 500;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  background: white;
+  padding: 20px 30px;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+.page-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+/* Access Denied */
+.access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  background-color: #f5f5f5;
+}
+
+.access-denied h2 {
+  color: #e74c3c;
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.access-denied p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Add User Form Styles */
+.add-user-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.add-user-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.add-user-header h2 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.add-user-header p {
+  color: #666;
+}
+
+.add-user-form .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.add-user-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-user-form .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.add-user-form label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.add-user-form input,
+.add-user-form select,
+.add-user-form textarea {
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.add-user-form input:focus,
+.add-user-form select:focus,
+.add-user-form textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.add-user-form input:disabled,
+.add-user-form select:disabled,
+.add-user-form textarea:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.form-actions {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.create-user-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 40px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.create-user-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.create-user-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-dashboard {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+  }
+  
+  .sidebar-nav ul {
+    display: flex;
+    overflow-x: auto;
+    margin: 0;
+  }
+  
+  .sidebar-nav li {
+    min-width: 120px;
+    flex-direction: column;
+    text-align: center;
+    padding: 10px;
+  }
+  
+  .sidebar-nav .icon {
+    margin-right: 0;
+    margin-bottom: 5px;
+  }
+  
+  .add-user-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
