@@ -47,8 +47,6 @@ const Toast = ({ message, type, onClose }) => {
 };
 
 const FileUpload = ({ selectedId }) => {
-  console.log("selectedId", selectedId);
-
   const { currentUser } = useAuth();
   const { id } = useParams();
   const [isEditing, setIsEditing] = useState(false);
@@ -694,7 +692,7 @@ const FileUpload = ({ selectedId }) => {
         ))}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .upload-container {
           width: 95%;
           max-width: 950px;

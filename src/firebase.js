@@ -6,14 +6,14 @@ import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database'; // Add this import
 
 const firebaseConfig = {
-  apiKey: import.meta.env.apiKey,
-  authDomain: import.meta.env.authDomain,
-  databaseURL: import.meta.env.databaseURL,
-  projectId: import.meta.env.projectId,
-  storageBucket: import.meta.env.storageBucket,
-  messagingSenderId: import.meta.env.messagingSenderId,
-  appId: import.meta.env.appId,
-  measurementId: import.meta.env.measurementId
+  apiKey: "AIzaSyDEgCXNnqxyhwupjXglSivxjmqtXPTs1Ms",
+  authDomain: "analysefiles.firebaseapp.com",
+  databaseURL: "https://analysefiles-default-rtdb.firebaseio.com",
+  projectId: "analysefiles",
+  storageBucket: "analysefiles.firebasestorage.app",
+  messagingSenderId: "436515745932",
+  appId: "1:436515745932:web:1bbab619f87280a7004ba9",
+  measurementId: "G-0EE2KGRX1H"
 };
 
 

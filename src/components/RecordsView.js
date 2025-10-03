@@ -460,7 +460,7 @@ const FileRecordsList = () => {
           </AnimatePresence>
         </div>
 
-        <style jsx>{`
+        <style>{`
           .data-table-section {
             max-width: 1200px;
             margin: 2rem auto 0 auto;
