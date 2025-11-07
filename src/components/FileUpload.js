@@ -597,7 +597,7 @@ const FileUpload = ({ selectedId }) => {
               >
                 <option value="">Select Department</option>
                 <option value="Public Representation">
-                  Public Representation
+                  Public Representative
                 </option>
                 <option value="Executive Engineer">Executive Engineer</option>
                 <option value="Contractor">Contractor</option>
