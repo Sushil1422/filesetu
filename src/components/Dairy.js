@@ -66,16 +66,16 @@ const Dairy = ({ showToast }) => {
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const printRef = useRef();
 
-  // Form data for new/edit entry
+  // Form data for new/edit entry with DEFAULT TIME VALUES
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     travelFrom: "",
     travelTo: "",
-    timeFromHour: "",
-    timeFromMinute: "",
+    timeFromHour: "9", // DEFAULT: 9 AM
+    timeFromMinute: "0", // DEFAULT: 00
     timeFromPeriod: "AM",
-    timeToHour: "",
-    timeToMinute: "",
+    timeToHour: "5", // DEFAULT: 5 PM
+    timeToMinute: "0", // DEFAULT: 00
     timeToPeriod: "PM",
     distance: "",
     vehicle: "",
@@ -123,6 +123,15 @@ const Dairy = ({ showToast }) => {
 
     return () => unsubscribe();
   }, [currentUser, showToast]);
+
+  // AUTO-ENABLE EDIT MODE WHEN REPORT MODAL OPENS
+  useEffect(() => {
+    if (showReportModal) {
+      setIsEditingConfig(true);
+    } else {
+      setIsEditingConfig(false);
+    }
+  }, [showReportModal]);
 
   // ========== UTILITY FUNCTIONS ==========
 
@@ -511,18 +520,18 @@ const Dairy = ({ showToast }) => {
   };
 
   /**
-   * Reset form to initial state
+   * Reset form to initial state WITH DEFAULT TIME VALUES
    */
   const resetForm = () => {
     setFormData({
       date: new Date().toISOString().split("T")[0],
       travelFrom: "",
       travelTo: "",
-      timeFromHour: "",
-      timeFromMinute: "",
+      timeFromHour: "9", // DEFAULT: 9 AM
+      timeFromMinute: "0", // DEFAULT: 00
       timeFromPeriod: "AM",
-      timeToHour: "",
-      timeToMinute: "",
+      timeToHour: "5", // DEFAULT: 5 PM
+      timeToMinute: "0", // DEFAULT: 00
       timeToPeriod: "PM",
       distance: "",
       vehicle: "",
@@ -646,7 +655,7 @@ const Dairy = ({ showToast }) => {
         ) : entries.length === 0 ? (
           // Empty State
           <div className="dairy-empty">
-            <BookOpen size={64} color="#94a3b8" />
+            <BookOpen size={64} color="#c4b5fd" />
             <h3>No Travel Entries Yet</h3>
             <p>Start tracking your travel by creating your first entry</p>
             <button
@@ -682,7 +691,7 @@ const Dairy = ({ showToast }) => {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 10 }}
-                      whileHover={{ backgroundColor: "#fffbeb" }}
+                      whileHover={{ backgroundColor: "#faf5ff" }}
                     >
                       <td className="td-date">
                         {new Date(entry.date).toLocaleDateString("en-IN", {
@@ -1418,7 +1427,6 @@ const Dairy = ({ showToast }) => {
       </AnimatePresence>
 
       {/* ========== MONTHLY REPORT MODAL ========== */}
-      {/* Keep the existing monthly report modal code unchanged */}
       <AnimatePresence>
         {showReportModal && (
           <motion.div
@@ -1453,6 +1461,7 @@ const Dairy = ({ showToast }) => {
                     title="Edit Report Details"
                   >
                     <Edit2 size={18} />
+                    {isEditingConfig ? "Hide" : "Edit"}
                   </button>
                   <button onClick={handleDownloadPDF} className="btn-download">
                     <Download size={18} />
@@ -1777,16 +1786,42 @@ const Dairy = ({ showToast }) => {
 
       {/* ========== STYLES ========== */}
       <style>{`
-        /* ========== CSS VARIABLES ========== */
+        /* ========== CSS VARIABLES - PASTEL PALETTE ========== */
         :root {
-          --brand: #2563eb;
-          --brand2: #1d4ed8;
-          --accent: #f59e0b;
-          --ink: #0f172a;
-          --muted: #64748b;
-          --line: #e2e8f0;
-          --danger: #dc2626;
-          --danger-dark: #b91c1c;
+          --purple-100: #f3e8ff;
+          --purple-200: #e9d5ff;
+          --purple-300: #d8b4fe;
+          --purple-400: #c084fc;
+          --purple-500: #a855f7;
+          --purple-600: #9333ea;
+          
+          --pink-100: #fce7f3;
+          --pink-200: #fbcfe8;
+          --pink-300: #f9a8d4;
+          --pink-400: #f472b6;
+          
+          --blue-100: #dbeafe;
+          --blue-200: #bfdbfe;
+          --blue-300: #93c5fd;
+          --blue-400: #60a5fa;
+          --blue-500: #3b82f6;
+          
+          --green-200: #bbf7d0;
+          --green-300: #86efac;
+          --green-400: #4ade80;
+          
+          --red-100: #fee2e2;
+          --red-200: #fecaca;
+          --red-300: #fca5a5;
+          --red-400: #f87171;
+          
+          --gray-50: #f9fafb;
+          --gray-100: #f3f4f6;
+          --gray-200: #e5e7eb;
+          --gray-300: #d1d5db;
+          --gray-500: #6b7280;
+          --gray-600: #4b5563;
+          --gray-700: #374151;
         }
 
         /* ========== MAIN CONTAINER ========== */
@@ -1812,14 +1847,14 @@ const Dairy = ({ showToast }) => {
           gap: 0.6rem;
           margin: 0;
           font-size: 1.6rem;
-          background: linear-gradient(135deg, var(--accent), #fbbf24);
+          background: linear-gradient(135deg, var(--purple-500), var(--pink-400));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .dairy-header-left p {
           margin: 0.15rem 0 0;
-          color: var(--muted);
+          color: var(--gray-500);
         }
 
         .dairy-header-actions {
@@ -1843,23 +1878,23 @@ const Dairy = ({ showToast }) => {
         }
 
         .btn-add-dairy {
-          background: linear-gradient(135deg, var(--accent), #fbbf24);
-          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+          background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
+          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
         }
 
         .btn-add-dairy:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+          box-shadow: 0 6px 16px rgba(168, 85, 247, 0.35);
         }
 
         .btn-report {
-          background: linear-gradient(135deg, var(--brand), var(--brand2));
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+          background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
         }
 
         .btn-report:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
         }
 
         /* ========== LOADING & EMPTY STATES ========== */
@@ -1870,15 +1905,15 @@ const Dairy = ({ showToast }) => {
           align-items: center;
           justify-content: center;
           padding: 3rem 1rem;
-          color: var(--muted);
+          color: var(--gray-500);
           text-align: center;
         }
 
         .spinner-dairy {
           width: 36px;
           height: 36px;
-          border: 4px solid #e2e8f0;
-          border-top-color: var(--accent);
+          border: 4px solid var(--purple-200);
+          border-top-color: var(--purple-500);
           border-radius: 50%;
           animation: spin 1s linear infinite;
           margin-bottom: 0.75rem;
@@ -1892,11 +1927,11 @@ const Dairy = ({ showToast }) => {
 
         .dairy-empty h3 {
           margin: 1rem 0 0.5rem;
-          color: var(--muted);
+          color: var(--gray-500);
         }
 
         .dairy-empty p {
-          color: var(--muted);
+          color: var(--gray-500);
           margin: 0.25rem 0;
         }
 
@@ -1906,7 +1941,7 @@ const Dairy = ({ showToast }) => {
           gap: 0.5rem;
           margin-top: 1rem;
           padding: 0.75rem 1.5rem;
-          background: linear-gradient(135deg, var(--accent), #fbbf24);
+          background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
           color: white;
           border: none;
           border-radius: 10px;
@@ -1917,14 +1952,14 @@ const Dairy = ({ showToast }) => {
 
         .btn-empty-dairy:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+          box-shadow: 0 6px 16px rgba(168, 85, 247, 0.35);
         }
 
         /* ========== ENTRIES TABLE ========== */
         .dairy-table-container {
           background: #fff;
           border-radius: 12px;
-          box-shadow: 0 2px 10px rgba(2, 6, 23, 0.06);
+          box-shadow: 0 2px 10px rgba(168, 85, 247, 0.1);
           overflow: hidden;
         }
 
@@ -1934,7 +1969,7 @@ const Dairy = ({ showToast }) => {
         }
 
         .dairy-table thead {
-          background: linear-gradient(135deg, var(--accent), #fbbf24);
+          background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
         }
 
         .dairy-table th {
@@ -1948,47 +1983,46 @@ const Dairy = ({ showToast }) => {
 
         .dairy-table td {
           padding: 0.8rem 0.75rem;
-          border-bottom: 1px solid var(--line);
+          border-bottom: 1px solid var(--gray-200);
           font-size: 0.92rem;
         }
 
-        /* Clickable row styles */
         .clickable-row {
           cursor: pointer;
           transition: background-color 0.2s ease;
         }
 
         .clickable-row:hover {
-          background-color: #fffbeb !important;
+          background-color: #faf5ff !important;
         }
 
         .inline-icon {
           margin-right: 0.35rem;
-          color: #64748b;
+          color: var(--purple-400);
           vertical-align: middle;
         }
 
         .td-date {
           font-weight: 700;
-          color: #0ea5e9;
+          color: var(--blue-400);
         }
 
         .td-duration {
           font-weight: 700;
-          color: #0891b2;
+          color: var(--purple-500);
         }
 
         .td-distance {
           font-weight: 700;
-          color: #059669;
+          color: var(--green-400);
         }
 
         /* ========== ENTRY OPTIONS MODAL ========== */
         .entry-options-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.55);
-          backdrop-filter: blur(3px);
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -2001,7 +2035,7 @@ const Dairy = ({ showToast }) => {
           border-radius: 16px;
           max-width: 500px;
           width: 100%;
-          box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+          box-shadow: 0 22px 60px rgba(168, 85, 247, 0.25);
         }
 
         .entry-options-header {
@@ -2009,23 +2043,23 @@ const Dairy = ({ showToast }) => {
           justify-content: space-between;
           align-items: center;
           padding: 1rem 1.25rem;
-          border-bottom: 2px solid var(--line);
-          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+          border-bottom: 2px solid var(--purple-100);
+          background: linear-gradient(135deg, var(--purple-50), var(--pink-100));
         }
 
         .entry-options-header h3 {
           margin: 0;
           font-size: 1.15rem;
-          color: var(--ink);
+          color: var(--gray-700);
         }
 
         .btn-close-options {
-          background: #f1f5f9;
+          background: var(--purple-100);
           border: none;
           border-radius: 8px;
           padding: 0.5rem;
           cursor: pointer;
-          color: #64748b;
+          color: var(--purple-600);
           transition: all 0.2s ease;
           display: flex;
           align-items: center;
@@ -2033,8 +2067,8 @@ const Dairy = ({ showToast }) => {
         }
 
         .btn-close-options:hover {
-          background: #e2e8f0;
-          color: #334155;
+          background: var(--purple-200);
+          color: var(--purple-700);
         }
 
         /* Entry details display */
@@ -2046,7 +2080,7 @@ const Dairy = ({ showToast }) => {
           display: flex;
           justify-content: space-between;
           padding: 0.75rem 0;
-          border-bottom: 1px solid var(--line);
+          border-bottom: 1px solid var(--gray-200);
         }
 
         .detail-row:last-child {
@@ -2055,13 +2089,13 @@ const Dairy = ({ showToast }) => {
 
         .detail-row .label {
           font-weight: 600;
-          color: var(--muted);
+          color: var(--gray-500);
           font-size: 0.9rem;
         }
 
         .detail-row .value {
           font-weight: 500;
-          color: var(--ink);
+          color: var(--gray-700);
           text-align: right;
         }
 
@@ -2070,8 +2104,8 @@ const Dairy = ({ showToast }) => {
           display: flex;
           gap: 0.75rem;
           padding: 1rem 1.25rem;
-          border-top: 2px solid var(--line);
-          background: #f8fafc;
+          border-top: 2px solid var(--purple-100);
+          background: var(--gray-50);
         }
 
         .btn-edit-entry {
@@ -2081,7 +2115,7 @@ const Dairy = ({ showToast }) => {
           justify-content: center;
           gap: 0.5rem;
           padding: 0.75rem;
-          background: linear-gradient(135deg, var(--brand), var(--brand2));
+          background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
           color: white;
           border: none;
           border-radius: 10px;
@@ -2092,7 +2126,7 @@ const Dairy = ({ showToast }) => {
 
         .btn-edit-entry:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
         }
 
         .btn-delete-entry-modal {
@@ -2102,7 +2136,7 @@ const Dairy = ({ showToast }) => {
           justify-content: center;
           gap: 0.5rem;
           padding: 0.75rem;
-          background: linear-gradient(135deg, #dc2626, #b91c1c);
+          background: linear-gradient(135deg, var(--red-300), var(--red-400));
           color: white;
           border: none;
           border-radius: 10px;
@@ -2113,14 +2147,14 @@ const Dairy = ({ showToast }) => {
 
         .btn-delete-entry-modal:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+          box-shadow: 0 6px 16px rgba(248, 113, 113, 0.35);
         }
 
         /* ========== DELETE CONFIRMATION MODAL ========== */
         .delete-confirm-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.6);
+          background: rgba(0, 0, 0, 0.5);
           backdrop-filter: blur(4px);
           display: flex;
           justify-content: center;
@@ -2134,7 +2168,7 @@ const Dairy = ({ showToast }) => {
           border-radius: 20px;
           max-width: 480px;
           width: 100%;
-          box-shadow: 0 25px 70px rgba(220, 38, 38, 0.3);
+          box-shadow: 0 25px 70px rgba(248, 113, 113, 0.3);
           overflow: hidden;
         }
 
@@ -2142,19 +2176,19 @@ const Dairy = ({ showToast }) => {
           display: flex;
           justify-content: center;
           padding: 2rem 1.5rem 1rem;
-          background: linear-gradient(135deg, #fef2f2, #fee2e2);
+          background: linear-gradient(135deg, var(--red-100), var(--red-200));
         }
 
         .delete-icon-circle {
           width: 96px;
           height: 96px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #fecaca, #fca5a5);
+          background: linear-gradient(135deg, var(--red-200), var(--red-300));
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--danger);
-          box-shadow: 0 8px 24px rgba(220, 38, 38, 0.25);
+          color: var(--red-400);
+          box-shadow: 0 8px 24px rgba(248, 113, 113, 0.25);
         }
 
         .delete-content {
@@ -2165,20 +2199,20 @@ const Dairy = ({ showToast }) => {
         .delete-content h3 {
           margin: 0 0 0.75rem;
           font-size: 1.5rem;
-          color: var(--danger);
+          color: var(--red-400);
           font-weight: 700;
         }
 
         .delete-content p {
           margin: 0 0 1.25rem;
-          color: var(--muted);
+          color: var(--gray-500);
           font-size: 0.95rem;
           line-height: 1.6;
         }
 
         .delete-entry-summary {
-          background: #f8fafc;
-          border: 2px solid #e2e8f0;
+          background: var(--gray-50);
+          border: 2px solid var(--gray-200);
           border-radius: 12px;
           padding: 1rem;
           text-align: left;
@@ -2189,7 +2223,7 @@ const Dairy = ({ showToast }) => {
           justify-content: space-between;
           align-items: center;
           padding: 0.5rem 0;
-          border-bottom: 1px solid #e2e8f0;
+          border-bottom: 1px solid var(--gray-200);
         }
 
         .summary-item:last-child {
@@ -2198,13 +2232,13 @@ const Dairy = ({ showToast }) => {
 
         .summary-label {
           font-weight: 600;
-          color: var(--muted);
+          color: var(--gray-500);
           font-size: 0.88rem;
         }
 
         .summary-value {
           font-weight: 600;
-          color: var(--ink);
+          color: var(--gray-700);
           font-size: 0.92rem;
         }
 
@@ -2212,17 +2246,17 @@ const Dairy = ({ showToast }) => {
           display: flex;
           gap: 0.75rem;
           padding: 1.25rem 1.75rem;
-          background: #f8fafc;
-          border-top: 2px solid var(--line);
+          background: var(--gray-50);
+          border-top: 2px solid var(--gray-200);
         }
 
         .btn-cancel-delete {
           flex: 1;
           padding: 0.85rem 1.25rem;
           background: #fff;
-          border: 2px solid #cbd5e1;
+          border: 2px solid var(--gray-300);
           border-radius: 12px;
-          color: #64748b;
+          color: var(--gray-600);
           font-weight: 600;
           font-size: 0.95rem;
           cursor: pointer;
@@ -2230,9 +2264,9 @@ const Dairy = ({ showToast }) => {
         }
 
         .btn-cancel-delete:hover {
-          background: #f1f5f9;
-          border-color: #94a3b8;
-          color: #334155;
+          background: var(--gray-100);
+          border-color: var(--gray-400);
+          color: var(--gray-700);
           transform: translateY(-1px);
         }
 
@@ -2243,7 +2277,7 @@ const Dairy = ({ showToast }) => {
           justify-content: center;
           gap: 0.5rem;
           padding: 0.85rem 1.25rem;
-          background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+          background: linear-gradient(135deg, var(--red-300), var(--red-400));
           border: none;
           border-radius: 12px;
           color: white;
@@ -2251,12 +2285,12 @@ const Dairy = ({ showToast }) => {
           font-size: 0.95rem;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+          box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
         }
 
         .btn-confirm-delete:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+          box-shadow: 0 6px 20px rgba(248, 113, 113, 0.4);
         }
 
         .btn-confirm-delete:active {
@@ -2268,8 +2302,8 @@ const Dairy = ({ showToast }) => {
         .report-modal-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.55);
-          backdrop-filter: blur(3px);
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -2284,7 +2318,7 @@ const Dairy = ({ showToast }) => {
           width: 100%;
           max-height: 92vh;
           overflow: auto;
-          box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+          box-shadow: 0 22px 60px rgba(168, 85, 247, 0.2);
         }
 
         .report-modal-content {
@@ -2294,7 +2328,7 @@ const Dairy = ({ showToast }) => {
           max-width: 950px;
           max-height: 92vh;
           overflow: auto;
-          box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+          box-shadow: 0 22px 60px rgba(168, 85, 247, 0.2);
         }
 
         .compact-report {
@@ -2307,8 +2341,8 @@ const Dairy = ({ showToast }) => {
           justify-content: space-between;
           align-items: center;
           padding: 1rem 1.25rem;
-          border-bottom: 2px solid var(--line);
-          background: #f8fafc;
+          border-bottom: 2px solid var(--purple-100);
+          background: linear-gradient(135deg, var(--purple-50), var(--pink-100));
           position: sticky;
           top: 0;
           z-index: 10;
@@ -2321,17 +2355,17 @@ const Dairy = ({ showToast }) => {
           gap: 0.6rem;
           margin: 0;
           font-size: 1.15rem;
-          color: var(--ink);
+          color: var(--gray-700);
         }
 
         .btn-close-modal,
         .btn-close-report {
-          background: #f1f5f9;
+          background: var(--purple-100);
           border: none;
           border-radius: 8px;
           padding: 0.5rem;
           cursor: pointer;
-          color: #64748b;
+          color: var(--purple-600);
           transition: all 0.2s ease;
           display: flex;
           align-items: center;
@@ -2340,8 +2374,8 @@ const Dairy = ({ showToast }) => {
 
         .btn-close-modal:hover,
         .btn-close-report:hover {
-          background: #e2e8f0;
-          color: #334155;
+          background: var(--purple-200);
+          color: var(--purple-700);
         }
 
         /* ========== REPORT CONTROLS ========== */
@@ -2354,7 +2388,7 @@ const Dairy = ({ showToast }) => {
 
         .report-controls input[type="month"] {
           padding: 0.45rem 0.6rem;
-          border: 1px solid #cbd5e1;
+          border: 1px solid var(--purple-200);
           border-radius: 8px;
           font-size: 0.9rem;
         }
@@ -2375,44 +2409,44 @@ const Dairy = ({ showToast }) => {
         }
 
         .btn-edit-config {
-          background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          background: linear-gradient(135deg, var(--purple-400), var(--purple-500));
         }
 
         .btn-edit-config:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
         }
 
         .btn-print {
-          background: linear-gradient(135deg, var(--brand), var(--brand2));
+          background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
         }
 
         .btn-print:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
         }
 
         .btn-download {
-          background: linear-gradient(135deg, #0ea5e9, #0284c7);
+          background: linear-gradient(135deg, var(--green-300), var(--green-400));
         }
 
         .btn-download:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+          box-shadow: 0 4px 12px rgba(74, 222, 128, 0.35);
         }
 
         /* ========== CONFIGURATION PANEL ========== */
         .config-panel {
           padding: 1.25rem;
-          background: #f8fafc;
-          border-bottom: 2px solid var(--line);
+          background: var(--gray-50);
+          border-bottom: 2px solid var(--purple-100);
           max-height: 60vh;
           overflow-y: auto;
         }
 
         .config-panel h4 {
           margin: 0 0 1rem;
-          color: var(--ink);
+          color: var(--gray-700);
           font-size: 1.1rem;
         }
 
@@ -2422,7 +2456,7 @@ const Dairy = ({ showToast }) => {
 
         .config-section h5 {
           margin: 0 0 0.75rem;
-          color: var(--muted);
+          color: var(--purple-600);
           font-size: 0.95rem;
           font-weight: 600;
           text-transform: uppercase;
@@ -2441,13 +2475,13 @@ const Dairy = ({ showToast }) => {
           margin-bottom: 0.35rem;
           font-weight: 600;
           font-size: 0.85rem;
-          color: var(--muted);
+          color: var(--gray-600);
         }
 
         .config-field input {
           width: 100%;
           padding: 0.5rem;
-          border: 1px solid #cbd5e1;
+          border: 1px solid var(--purple-200);
           border-radius: 6px;
           font-size: 0.9rem;
           transition: all 0.2s ease;
@@ -2455,8 +2489,8 @@ const Dairy = ({ showToast }) => {
 
         .config-field input:focus {
           outline: none;
-          border-color: var(--accent);
-          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+          border-color: var(--purple-400);
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
         .btn-save-config {
@@ -2464,7 +2498,7 @@ const Dairy = ({ showToast }) => {
           align-items: center;
           gap: 0.4rem;
           padding: 0.6rem 1.2rem;
-          background: linear-gradient(135deg, var(--accent), #fbbf24);
+          background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
           color: white;
           border: none;
           border-radius: 8px;
@@ -2476,7 +2510,7 @@ const Dairy = ({ showToast }) => {
 
         .btn-save-config:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
         }
 
         /* ========== FORM STYLES ========== */
@@ -2499,18 +2533,18 @@ const Dairy = ({ showToast }) => {
         .form-group label {
           margin-bottom: 0.4rem;
           font-weight: 600;
-          color: var(--ink);
+          color: var(--gray-700);
           font-size: 0.9rem;
         }
 
         .required {
-          color: #dc2626;
+          color: var(--red-400);
         }
 
         .form-group input,
         .form-group select {
           padding: 0.7rem;
-          border: 1px solid #cbd5e1;
+          border: 1px solid var(--purple-200);
           border-radius: 8px;
           font-size: 0.95rem;
           transition: all 0.2s ease;
@@ -2519,16 +2553,16 @@ const Dairy = ({ showToast }) => {
         .form-group input:focus,
         .form-group select:focus {
           outline: none;
-          border-color: var(--accent);
-          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+          border-color: var(--purple-400);
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
         .form-group .error {
-          border-color: #dc2626;
+          border-color: var(--red-400);
         }
 
         .error-text {
-          color: #dc2626;
+          color: var(--red-400);
           font-size: 0.8rem;
           margin-top: 0.25rem;
         }
@@ -2543,7 +2577,7 @@ const Dairy = ({ showToast }) => {
         .time-select {
           flex: 1;
           padding: 0.7rem 0.5rem;
-          border: 1px solid #cbd5e1;
+          border: 1px solid var(--purple-200);
           border-radius: 8px;
           font-size: 0.95rem;
           background: white;
@@ -2553,36 +2587,36 @@ const Dairy = ({ showToast }) => {
 
         .time-select:focus {
           outline: none;
-          border-color: var(--accent);
-          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+          border-color: var(--purple-400);
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
         .time-select.error {
-          border-color: #dc2626;
+          border-color: var(--red-400);
         }
 
         .time-separator {
           font-weight: 700;
           font-size: 1.2rem;
-          color: var(--muted);
+          color: var(--gray-500);
         }
 
         .time-period {
           flex: 0.8;
           padding: 0.7rem 0.5rem;
-          border: 1px solid #cbd5e1;
+          border: 1px solid var(--purple-200);
           border-radius: 8px;
           font-size: 0.95rem;
-          font-weight: 600;
-          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+         
+          background: linear-gradient(135deg, var(--purple-50), var(--pink-100));
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .time-period:focus {
           outline: none;
-          border-color: var(--accent);
-          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+          border-color: var(--purple-400);
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
         /* ========== MODAL FOOTER ========== */
@@ -2591,34 +2625,34 @@ const Dairy = ({ showToast }) => {
           justify-content: flex-end;
           gap: 0.6rem;
           padding: 1rem 1.25rem;
-          border-top: 2px solid var(--line);
-          background: #f8fafc;
+          border-top: 2px solid var(--purple-100);
+          background: var(--gray-50);
           position: sticky;
           bottom: 0;
         }
 
         .btn-cancel {
           padding: 0.6rem 1.2rem;
-          background: #f1f5f9;
-          border: 1px solid #cbd5e1;
+          background: #fff;
+          border: 1px solid var(--gray-300);
           border-radius: 8px;
-          color: #64748b;
+          color: var(--gray-600);
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .btn-cancel:hover {
-          background: #e2e8f0;
-          border-color: #94a3b8;
-          color: #334155;
+          background: var(--gray-100);
+          border-color: var(--gray-400);
+          color: var(--gray-700);
         }
 
         .btn-save {
           display: flex;
           align-items: center;
           gap: 0.45rem;
-          background: linear-gradient(135deg, var(--accent), #fbbf24);
+          background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
           color: #fff;
           border: none;
           border-radius: 8px;
@@ -2630,7 +2664,7 @@ const Dairy = ({ showToast }) => {
 
         .btn-save:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
         }
 
         /* ========== REPORT CONTENT (PRINTABLE) ========== */
@@ -2680,7 +2714,7 @@ const Dairy = ({ showToast }) => {
         .gov-table th {
           font-weight: 800;
           text-align: center;
-          background: #f3f4f6;
+          background: var(--gray-100);
           font-size: 0.76rem;
         }
 

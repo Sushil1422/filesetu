@@ -20,15 +20,15 @@ const Toast = ({ message, type, onClose }) => {
   const getBackgroundColor = () => {
     switch (type) {
       case "success":
-        return "linear-gradient(135deg, #10b981, #059669)";
+        return "linear-gradient(135deg, #a7f3d0, #6ee7b7)";
       case "error":
-        return "linear-gradient(135deg, #ef4444, #dc2626)";
+        return "linear-gradient(135deg, #fca5a5, #f87171)";
       case "warning":
-        return "linear-gradient(135deg, #f59e0b, #d97706)";
+        return "linear-gradient(135deg, #fcd34d, #fbbf24)";
       case "info":
-        return "linear-gradient(135deg, #3b82f6, #2563eb)";
+        return "linear-gradient(135deg, #93c5fd, #60a5fa)";
       default:
-        return "linear-gradient(135deg, #4f46e5, #9333ea)";
+        return "linear-gradient(135deg, #c4b5fd, #a78bfa)";
     }
   };
 
@@ -51,10 +51,10 @@ const Toast = ({ message, type, onClose }) => {
     <motion.div
       className="toast-notification"
       style={{ background: getBackgroundColor() }}
-      initial={{ opacity: 0, x: 300, scale: 0.3 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 300, scale: 0.5 }}
-      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+      initial={{ opacity: 0, y: 50, scale: 0.3 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+      transition={{ type: "spring", stiffness: 500, damping: 25 }}
     >
       <span className="toast-icon">{getIcon()}</span>
       <span className="toast-message">{message}</span>
@@ -486,265 +486,331 @@ const FileUpload = ({ selectedId }) => {
   };
 
   return (
-    <div className="upload-container">
-      <div className="upload-header">
-        <h2>📤 Upload Files</h2>
-      </div>
-
-      <form onSubmit={handleSubmit} className="upload-form">
-        {/* Compact File Upload Section */}
-        <div className="file-upload-section">
-          <label htmlFor="file-input" className="file-upload-label">
-            {selectedFile ? (
-              <div className="file-selected">
-                <span className="file-icon">
-                  {getFileIcon(selectedFile.type)}
-                </span>
-                <div className="file-info">
-                  <strong>{selectedFile.name}</strong>
-                  <span className="file-size">
-                    {formatFileSize(selectedFile.size)} •{" "}
-                    {getFileLabel(selectedFile.type)}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleClearFile();
-                  }}
-                  className="clear-btn"
-                  disabled={uploading}
-                >
-                  ✕
-                </button>
-              </div>
-            ) : !isEditing || !initialFileInfo ? (
-              <div className="file-placeholder">
-                <span className="upload-icon">📎</span>
-                <span>Click to select file *</span>
-              </div>
-            ) : (
-              <div className="file-selected">
-                <span className="file-icon">
-                  {getFileIcon(initialFileInfo.fileType)}
-                </span>
-                <div className="file-info">
-                  <strong>{initialFileInfo.fileName}</strong>
-                  <span className="file-size">
-                    {formatFileSize(initialFileInfo.fileSize)} •{" "}
-                    {getFileLabel(initialFileInfo.fileType)}
-                  </span>
-                </div>
-                <a
-                  href={initialFileInfo.fileURL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="view-link"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View
-                </a>
-              </div>
-            )}
-            <input
-              type="file"
-              id="file-input"
-              onChange={handleFileSelect}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp,.txt,.rtf,.ppt,.pptx,.zip,.rar"
-              required={!isEditing}
-              disabled={uploading}
-              style={{ display: "none" }}
-            />
-          </label>
+    <div className="upload-wrapper">
+      <div className="upload-container">
+        <div className="upload-header">
+          <div className="header-content">
+            <span className="header-icon">📤</span>
+            <h2 className="header-title">Upload Files</h2>
+          </div>
+          <p className="header-subtitle">Upload and manage your documents</p>
         </div>
 
-        {/* Compact Form Grid */}
-        <div className="form-grid">
-          <div className="form-group">
-            <label>
-              Department <span className="req">*</span>
+        <form onSubmit={handleSubmit} className="upload-form">
+          {/* File Upload Section */}
+          <div className="file-upload-section">
+            <label htmlFor="file-input" className="file-upload-label">
+              {selectedFile ? (
+                <div className="file-selected">
+                  <div className="file-icon-wrapper">
+                    <span className="file-icon">
+                      {getFileIcon(selectedFile.type)}
+                    </span>
+                  </div>
+                  <div className="file-info">
+                    <strong className="file-name">{selectedFile.name}</strong>
+                    <span className="file-meta">
+                      {formatFileSize(selectedFile.size)} •{" "}
+                      {getFileLabel(selectedFile.type)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleClearFile();
+                    }}
+                    className="clear-btn"
+                    disabled={uploading}
+                    aria-label="Clear file"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : !isEditing || !initialFileInfo ? (
+                <div className="file-placeholder">
+                  <div className="upload-icon-wrapper">
+                    <span className="upload-icon">📎</span>
+                  </div>
+                  <div className="upload-text">
+                    <span className="upload-title">
+                      Click to browse or drag & drop
+                    </span>
+                    <span className="upload-subtitle">
+                      PDF, DOC, Excel, Images • Max 50MB
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="file-selected">
+                  <div className="file-icon-wrapper">
+                    <span className="file-icon">
+                      {getFileIcon(initialFileInfo.fileType)}
+                    </span>
+                  </div>
+                  <div className="file-info">
+                    <strong className="file-name">
+                      {initialFileInfo.fileName}
+                    </strong>
+                    <span className="file-meta">
+                      {formatFileSize(initialFileInfo.fileSize)} •{" "}
+                      {getFileLabel(initialFileInfo.fileType)}
+                    </span>
+                  </div>
+                  <a
+                    href={initialFileInfo.fileURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="view-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    👁️ View
+                  </a>
+                </div>
+              )}
+              <input
+                type="file"
+                id="file-input"
+                onChange={handleFileSelect}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp,.txt,.rtf,.ppt,.pptx,.zip,.rar"
+                required={!isEditing}
+                disabled={uploading}
+                style={{ display: "none" }}
+              />
             </label>
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleInputChange}
-              required
-              disabled={uploading}
-            >
-              <option value="">Select</option>
-              <option value="Public Representation">Public Rep.</option>
-              <option value="Executive Engineer">Exec. Engineer</option>
-              <option value="Contractor">Contractor</option>
-              <option value="Farmer">Farmer</option>
-              <option value="Other">Other</option>
-            </select>
           </div>
 
-          {formData.department === "Public Representation" && (
+          {/* Form Fields */}
+          <div className="form-grid">
+            {/* Department */}
             <div className="form-group">
-              <label>
-                Type <span className="req">*</span>
+              <label className="form-label">
+                Department <span className="req">*</span>
               </label>
               <select
-                name="publicRepType"
-                value={formData.publicRepType}
+                name="department"
+                value={formData.department}
                 onChange={handleInputChange}
                 required
                 disabled={uploading}
+                className="form-input"
               >
-                <option value="">Select</option>
-                <option value="MLA">MLA</option>
-                <option value="MP">MP</option>
+                <option value="">Select Department</option>
+                <option value="Public Representation">
+                  Public Representation
+                </option>
+                <option value="Executive Engineer">Executive Engineer</option>
+                <option value="Contractor">Contractor</option>
+                <option value="Farmer">Farmer</option>
+                <option value="Other">Other</option>
               </select>
             </div>
-          )}
 
-          <div className="form-group">
-            <label>
-              Subject <span className="req">*</span>
-            </label>
-            <input
-              type="text"
-              name="subject"
-              value={formData.subject}
-              onChange={handleInputChange}
-              placeholder="Enter subject"
-              required
-              disabled={uploading}
-            />
-          </div>
+            {/* Public Rep Type - Conditional */}
+            {formData.department === "Public Representation" && (
+              <div className="form-group">
+                <label className="form-label">
+                  Type <span className="req">*</span>
+                </label>
+                <select
+                  name="publicRepType"
+                  value={formData.publicRepType}
+                  onChange={handleInputChange}
+                  required
+                  disabled={uploading}
+                  className="form-input"
+                >
+                  <option value="">Select Type</option>
+                  <option value="MLA">MLA</option>
+                  <option value="MP">MP</option>
+                </select>
+              </div>
+            )}
 
-          <div className="form-group">
-            <label>Received From</label>
-            <input
-              type="text"
-              name="receivedFrom"
-              value={formData.receivedFrom}
-              onChange={handleInputChange}
-              placeholder="Sender name"
-              disabled={uploading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Allocated To</label>
-            <input
-              type="text"
-              name="allocatedTo"
-              value={formData.allocatedTo}
-              onChange={handleInputChange}
-              placeholder="Assignee name"
-              disabled={uploading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Status</label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleInputChange}
-              disabled={uploading}
-            >
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Under Review">Under Review</option>
-              <option value="Completed">Completed</option>
-              <option value="On Hold">On Hold</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Archived">Archived</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>
-              Inward Number
-              {validatingInward && <span className="validating">⏳</span>}
-              {inwardNumberExists && <span className="error-txt">⚠️</span>}
-            </label>
-            <input
-              type="text"
-              name="inwardNumber"
-              value={formData.inwardNumber}
-              onChange={handleInputChange}
-              placeholder="Enter unique number"
-              disabled={uploading}
-              className={inwardNumberExists ? "error-input" : ""}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Inward Date</label>
-            <input
-              type="date"
-              name="inwardDate"
-              value={formData.inwardDate}
-              onChange={handleInputChange}
-              disabled={uploading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Receiving Date</label>
-            <input
-              type="date"
-              name="receivingDate"
-              value={formData.receivingDate}
-              onChange={handleInputChange}
-              disabled={uploading}
-            />
-          </div>
-
-          <div className="form-group full">
-            <label>Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Additional notes"
-              rows={2}
-              disabled={uploading}
-            />
-          </div>
-        </div>
-
-        {/* Upload Progress */}
-        {uploading && (
-          <div className="upload-progress">
-            <div className="progress-header">
-              <span>📤 Uploading...</span>
-              <span className="percent">{uploadProgress}%</span>
+            {/* Subject */}
+            <div className="form-group">
+              <label className="form-label">
+                Subject <span className="req">*</span>
+              </label>
+              <input
+                type="text"
+                name="subject"
+                value={formData.subject}
+                onChange={handleInputChange}
+                placeholder="Enter subject"
+                required
+                disabled={uploading}
+                className="form-input"
+              />
             </div>
-            <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${uploadProgress}%` }}
+
+            {/* Received From */}
+            <div className="form-group">
+              <label className="form-label">Received From</label>
+              <input
+                type="text"
+                name="receivedFrom"
+                value={formData.receivedFrom}
+                onChange={handleInputChange}
+                placeholder="Sender name"
+                disabled={uploading}
+                className="form-input"
+              />
+            </div>
+
+            {/* Allocated To */}
+            <div className="form-group">
+              <label className="form-label">Allocated To</label>
+              <input
+                type="text"
+                name="allocatedTo"
+                value={formData.allocatedTo}
+                onChange={handleInputChange}
+                placeholder="Assignee name"
+                disabled={uploading}
+                className="form-input"
+              />
+            </div>
+
+            {/* Status */}
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                disabled={uploading}
+                className="form-input"
+              >
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Completed">Completed</option>
+                <option value="On Hold">On Hold</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Archived">Archived</option>
+              </select>
+            </div>
+
+            {/* Inward Number */}
+            <div className="form-group">
+              <label className="form-label">
+                Inward Number
+                {validatingInward && <span className="validating">⏳</span>}
+                {inwardNumberExists && <span className="error-txt">⚠️</span>}
+              </label>
+              <input
+                type="text"
+                name="inwardNumber"
+                value={formData.inwardNumber}
+                onChange={handleInputChange}
+                placeholder="Enter unique number"
+                disabled={uploading}
+                className={`form-input ${
+                  inwardNumberExists ? "error-input" : ""
+                }`}
+              />
+            </div>
+
+            {/* Inward Date */}
+            <div className="form-group">
+              <label className="form-label">Inward Date</label>
+              <input
+                type="date"
+                name="inwardDate"
+                value={formData.inwardDate}
+                onChange={handleInputChange}
+                disabled={uploading}
+                className="form-input"
+              />
+            </div>
+
+            {/* Receiving Date */}
+            <div className="form-group">
+              <label className="form-label">Receiving Date</label>
+              <input
+                type="date"
+                name="receivingDate"
+                value={formData.receivingDate}
+                onChange={handleInputChange}
+                disabled={uploading}
+                className="form-input"
+              />
+            </div>
+
+            {/* Description - Full Width */}
+            <div className="form-group full-width">
+              <label className="form-label">Description</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Add additional notes or comments..."
+                rows={3}
+                disabled={uploading}
+                className="form-input"
               />
             </div>
           </div>
-        )}
 
-        {/* Submit Button */}
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={uploading || inwardNumberExists}
-          >
-            {uploading ? (
-              <>
-                <span className="spinner"></span>
-                {uploadProgress < 100 ? "Uploading..." : "Processing..."}
-              </>
-            ) : isEditing ? (
-              <>💾 Update</>
-            ) : (
-              <>📤 Upload</>
-            )}
-          </button>
-        </div>
-      </form>
+          {/* Upload Progress */}
+          {uploading && (
+            <motion.div
+              className="upload-progress"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="progress-content">
+                <div className="progress-header">
+                  <span className="progress-label">
+                    <span className="spinner-icon">⏳</span>
+                    {uploadProgress < 100
+                      ? "Uploading file..."
+                      : "Finalizing..."}
+                  </span>
+                  <span className="progress-percent">{uploadProgress}%</span>
+                </div>
+                <div className="progress-bar">
+                  <motion.div
+                    className="progress-fill"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${uploadProgress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Submit Button */}
+          <div className="form-actions">
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={uploading || inwardNumberExists}
+            >
+              {uploading ? (
+                <>
+                  <span className="btn-spinner"></span>
+                  <span>
+                    {uploadProgress < 100 ? "Uploading..." : "Processing..."}
+                  </span>
+                </>
+              ) : isEditing ? (
+                <>
+                  <span>💾</span>
+                  <span>Update File</span>
+                </>
+              ) : (
+                <>
+                  <span>📤</span>
+                  <span>Upload File</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Toast Container */}
       <div className="toast-container">
@@ -761,272 +827,441 @@ const FileUpload = ({ selectedId }) => {
       </div>
 
       <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .upload-wrapper {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #fef3c7 0%, #ddd6fe 50%, #fce7f3 100%);
+          padding: 1rem;
+        }
+
         .upload-container {
-          max-width: 900px;
-          margin: 1rem auto;
-          padding: 1.25rem;
-          background: #ffffff;
-          border-radius: 12px;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          width: 100%;
+          max-width: 1000px;
+          margin: 0 auto;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 24px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          padding: 1.5rem;
         }
 
+        /* Header */
         .upload-header {
-          margin-bottom: 1rem;
           text-align: center;
+          margin-bottom: 2rem;
+          padding-bottom: 1.5rem;
+          border-bottom: 2px solid #f3f4f6;
         }
 
-        .upload-header h2 {
-          font-size: 1.5rem;
+        .header-content {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .header-icon {
+          font-size: 2rem;
+          filter: drop-shadow(0 2px 8px rgba(168, 85, 247, 0.3));
+        }
+
+        .header-title {
+          font-size: clamp(1.75rem, 5vw, 2.25rem);
           font-weight: 700;
-          background: linear-gradient(135deg, #4f46e5, #9333ea);
+          margin: 0;
+          background: linear-gradient(135deg, #a855f7, #ec4899);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .header-subtitle {
+          font-size: 0.95rem;
+          color: #6b7280;
           margin: 0;
         }
 
+        /* Form */
+        .upload-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        /* File Upload Section */
         .file-upload-section {
-          margin-bottom: 1rem;
+          width: 100%;
         }
 
         .file-upload-label {
           display: block;
           cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .file-upload-label:active {
+          transform: scale(0.98);
         }
 
         .file-placeholder {
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 0.5rem;
-          padding: 1rem;
-          border: 2px dashed #cbd5e1;
-          border-radius: 10px;
-          background: #f9fafb;
-          transition: all 0.2s ease;
-          font-weight: 600;
-          color: #64748b;
+          gap: 1.25rem;
+          padding: 2.5rem 1.5rem;
+          border: 3px dashed #d8b4fe;
+          border-radius: 20px;
+          background: linear-gradient(135deg, #faf5ff 0%, #fef3c7 100%);
+          transition: all 0.3s ease;
+          min-height: 180px;
         }
 
         .file-placeholder:hover {
-          border-color: #6366f1;
-          background: #eef2ff;
-          color: #4f46e5;
+          border-color: #c084fc;
+          background: linear-gradient(135deg, #f5f3ff 0%, #fef3c7 100%);
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(168, 85, 247, 0.15);
+        }
+
+        .upload-icon-wrapper {
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, #fae8ff, #fef3c7);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 16px rgba(168, 85, 247, 0.2);
         }
 
         .upload-icon {
-          font-size: 1.5rem;
+          font-size: 2.5rem;
+          animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+
+        .upload-text {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          text-align: center;
+        }
+
+        .upload-title {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #581c87;
+        }
+
+        .upload-subtitle {
+          font-size: 0.9rem;
+          color: #9333ea;
         }
 
         .file-selected {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          border: 2px solid #e2e8f0;
-          border-radius: 10px;
-          background: #f8fafc;
-          transition: all 0.2s ease;
+          gap: 1rem;
+          padding: 1.25rem 1.5rem;
+          border: 2px solid #e9d5ff;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.1);
         }
 
         .file-selected:hover {
-          border-color: #cbd5e1;
-          background: #f1f5f9;
+          border-color: #d8b4fe;
+          box-shadow: 0 8px 20px rgba(168, 85, 247, 0.15);
+        }
+
+        .file-icon-wrapper {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #fae8ff, #fef3c7);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
 
         .file-icon {
-          font-size: 1.8rem;
-          flex-shrink: 0;
+          font-size: 2rem;
         }
 
         .file-info {
           flex: 1;
           min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
         }
 
-        .file-info strong {
-          display: block;
-          font-size: 0.9rem;
+        .file-name {
+          font-size: 1rem;
           font-weight: 600;
-          color: #1e293b;
+          color: #581c87;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-        }
-
-        .file-size {
           display: block;
-          font-size: 0.75rem;
-          color: #64748b;
-          margin-top: 2px;
         }
 
-        .clear-btn, .view-link {
-          flex-shrink: 0;
-          padding: 0.4rem 0.75rem;
-          border-radius: 6px;
+        .file-meta {
           font-size: 0.85rem;
+          color: #9333ea;
+        }
+
+        .clear-btn,
+        .view-link {
+          flex-shrink: 0;
+          padding: 0.65rem 1.25rem;
+          border-radius: 10px;
+          font-size: 0.9rem;
           font-weight: 600;
-          transition: all 0.2s ease;
+          transition: all 0.3s ease;
           text-decoration: none;
+          border: none;
+          cursor: pointer;
+          white-space: nowrap;
         }
 
         .clear-btn {
-          background: #fee2e2;
-          color: #dc2626;
-          border: none;
-          cursor: pointer;
+          background: linear-gradient(135deg, #fecaca, #fca5a5);
+          color: #991b1b;
         }
 
-        .clear-btn:hover {
-          background: #fecaca;
+        .clear-btn:hover:not(:disabled) {
+          background: linear-gradient(135deg, #fca5a5, #f87171);
+          transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .clear-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .view-link {
-          background: #dbeafe;
-          color: #2563eb;
+          background: linear-gradient(135deg, #bfdbfe, #93c5fd);
+          color: #1e3a8a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
         }
 
         .view-link:hover {
-          background: #bfdbfe;
+          background: linear-gradient(135deg, #93c5fd, #60a5fa);
+          transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
+        /* Form Grid */
         .form-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 0.85rem;
-          margin-bottom: 1rem;
+          grid-template-columns: 1fr;
+          gap: 1.25rem;
         }
 
         .form-group {
           display: flex;
           flex-direction: column;
-          gap: 0.35rem;
+          gap: 0.5rem;
         }
 
-        .form-group.full {
-          grid-column: 1 / -1;
-        }
-
-        .form-group label {
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: #334155;
-          display: flex;
-          align-items: center;
-          gap: 0.35rem;
-        }
-
-        .req {
-          color: #ef4444;
-        }
-
-        .validating, .error-txt {
-          font-size: 0.75rem;
-          margin-left: auto;
-        }
-
-        .validating {
-          color: #f59e0b;
-        }
-
-        .error-txt {
-          color: #ef4444;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-          padding: 0.6rem 0.75rem;
-          border: 1px solid #cbd5e1;
-          border-radius: 8px;
+        .form-label {
           font-size: 0.9rem;
-          background: #ffffff;
-          transition: all 0.2s ease;
-          font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-          border-color: #6366f1;
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        .error-input {
-          border-color: #ef4444 !important;
-        }
-
-        .upload-progress {
-          margin-bottom: 1rem;
-          padding: 0.85rem;
-          background: #f1f5f9;
-          border-radius: 8px;
-        }
-
-        .progress-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 0.5rem;
-          font-size: 0.85rem;
           font-weight: 600;
-          color: #334155;
-        }
-
-        .percent {
-          color: #4f46e5;
-        }
-
-        .progress-bar {
-          width: 100%;
-          height: 8px;
-          background: #e0e7ff;
-          border-radius: 999px;
-          overflow: hidden;
-        }
-
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #6366f1, #9333ea);
-          transition: width 0.3s ease;
-        }
-
-        .form-actions {
-          display: flex;
-          justify-content: flex-end;
-        }
-
-        .submit-btn {
-          padding: 0.7rem 2rem;
-          background: linear-gradient(135deg, #4f46e5, #9333ea);
-          border: none;
-          border-radius: 8px;
-          color: white;
-          font-weight: 600;
-          font-size: 0.95rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
+          color: #581c87;
           display: flex;
           align-items: center;
           gap: 0.5rem;
         }
 
+        .req {
+          color: #f43f5e;
+        }
+
+        .validating,
+        .error-txt {
+          font-size: 0.8rem;
+          margin-left: auto;
+        }
+
+        .validating {
+          color: #f59e0b;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        .error-txt {
+          color: #f43f5e;
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 0.85rem 1.1rem;
+          border: 2px solid #e9d5ff;
+          border-radius: 12px;
+          font-size: 1rem;
+          background: #ffffff;
+          transition: all 0.3s ease;
+          font-family: inherit;
+          color: #581c87;
+        }
+
+        .form-input::placeholder {
+          color: #c084fc;
+        }
+
+        .form-input:focus {
+          border-color: #c084fc;
+          outline: none;
+          box-shadow: 0 0 0 4px rgba(192, 132, 252, 0.1);
+          background: #fefeff;
+        }
+
+        .form-input:disabled {
+          background: #faf5ff;
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+
+        .error-input {
+          border-color: #fca5a5 !important;
+        }
+
+        .error-input:focus {
+          box-shadow: 0 0 0 4px rgba(252, 165, 165, 0.15) !important;
+        }
+
+        textarea.form-input {
+          resize: vertical;
+          min-height: 90px;
+        }
+
+        /* Upload Progress */
+        .upload-progress {
+          background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 100%);
+          border-radius: 16px;
+          border: 2px solid #fbcfe8;
+          overflow: hidden;
+        }
+
+        .progress-content {
+          padding: 1.25rem;
+        }
+
+        .progress-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.85rem;
+          font-size: 0.95rem;
+          font-weight: 600;
+        }
+
+        .progress-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #831843;
+        }
+
+        .spinner-icon {
+          animation: spin 1.5s linear infinite;
+        }
+
+        .progress-percent {
+          color: #be185d;
+          font-size: 1.15rem;
+        }
+
+        .progress-bar {
+          width: 100%;
+          height: 12px;
+          background: #fdf4ff;
+          border-radius: 999px;
+          overflow: hidden;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #f9a8d4, #c084fc, #a78bfa);
+          background-size: 200% 100%;
+          animation: shimmer 2s linear infinite;
+          border-radius: 999px;
+          box-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
+        }
+
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
+        /* Form Actions */
+        .form-actions {
+          display: flex;
+          justify-content: stretch;
+          margin-top: 0.5rem;
+        }
+
+        .submit-btn {
+          width: 100%;
+          padding: 1.1rem 2rem;
+          background: linear-gradient(135deg, #a855f7, #ec4899);
+          border: none;
+          border-radius: 14px;
+          color: white;
+          font-weight: 700;
+          font-size: 1.05rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+          letter-spacing: 0.3px;
+        }
+
         .submit-btn:hover:not(:disabled) {
-          background: linear-gradient(135deg, #4338ca, #7e22ce);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+          background: linear-gradient(135deg, #9333ea, #db2777);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(168, 85, 247, 0.45);
+        }
+
+        .submit-btn:active:not(:disabled) {
+          transform: translateY(0);
         }
 
         .submit-btn:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+          transform: none;
         }
 
-        .spinner {
+        .btn-spinner {
           display: inline-block;
-          width: 14px;
-          height: 14px;
+          width: 18px;
+          height: 18px;
           border: 2px solid rgba(255, 255, 255, 0.3);
           border-radius: 50%;
           border-top-color: white;
@@ -1037,62 +1272,177 @@ const FileUpload = ({ selectedId }) => {
           to { transform: rotate(360deg); }
         }
 
+        /* Toast Container */
         .toast-container {
           position: fixed;
-          bottom: 20px;
-          right: 20px;
+          bottom: 1rem;
+          left: 50%;
+          transform: translateX(-50%);
           z-index: 9999;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 0.75rem;
+          width: calc(100% - 2rem);
+          max-width: 400px;
+          pointer-events: none;
         }
 
         .toast-notification {
-          padding: 12px 16px;
-          border-radius: 8px;
-          color: white;
+          padding: 1rem 1.25rem;
+          border-radius: 14px;
+          color: #1e293b;
           display: flex;
           align-items: center;
-          gap: 10px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          min-width: 280px;
-          max-width: 350px;
+          gap: 0.75rem;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+          backdrop-filter: blur(10px);
+          pointer-events: auto;
+          font-weight: 600;
         }
 
         .toast-icon {
-          font-size: 1.1rem;
+          font-size: 1.3rem;
           flex-shrink: 0;
         }
 
         .toast-message {
           flex: 1;
-          font-size: 0.9rem;
-          font-weight: 500;
+          font-size: 0.95rem;
+          line-height: 1.4;
         }
 
         .toast-close {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(0, 0, 0, 0.1);
           border: none;
-          color: white;
+          color: #1e293b;
           cursor: pointer;
-          padding: 2px 6px;
-          border-radius: 4px;
+          padding: 0.35rem 0.6rem;
+          border-radius: 8px;
           font-size: 1rem;
           flex-shrink: 0;
+          transition: background 0.2s ease;
+          font-weight: bold;
         }
 
         .toast-close:hover {
-          background: rgba(255, 255, 255, 0.3);
+          background: rgba(0, 0, 0, 0.2);
         }
 
-        @media (max-width: 768px) {
-          .form-grid {
-            grid-template-columns: 1fr;
+        /* Tablet Styles */
+        @media (min-width: 640px) {
+          .upload-wrapper {
+            padding: 2rem;
           }
-          
+
           .upload-container {
-            padding: 1rem;
-            margin: 0.5rem;
+            padding: 2rem;
+            border-radius: 28px;
+          }
+
+          .form-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+          }
+
+          .full-width {
+            grid-column: 1 / -1;
+          }
+
+          .file-placeholder {
+            flex-direction: row;
+            padding: 2rem;
+          }
+
+          .upload-icon-wrapper {
+            width: 90px;
+            height: 90px;
+          }
+
+          .upload-icon {
+            font-size: 3rem;
+          }
+
+          .upload-text {
+            align-items: flex-start;
+            text-align: left;
+          }
+
+          .toast-container {
+            bottom: 1.5rem;
+            right: 1.5rem;
+            left: auto;
+            transform: none;
+            width: auto;
+          }
+        }
+
+        /* Desktop Styles */
+        @media (min-width: 1024px) {
+          .upload-wrapper {
+            padding: 3rem;
+          }
+
+          .upload-container {
+            padding: 2.5rem;
+          }
+
+          .upload-header {
+            margin-bottom: 2.5rem;
+          }
+
+          .form-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.75rem;
+          }
+
+          .upload-form {
+            gap: 2rem;
+          }
+
+          .submit-btn {
+            width: auto;
+            min-width: 220px;
+          }
+
+          .form-actions {
+            justify-content: flex-end;
+          }
+        }
+
+        /* Large Desktop */
+        @media (min-width: 1280px) {
+          .upload-container {
+            padding: 3rem;
+          }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+
+        /* Focus visible for keyboard navigation */
+        .submit-btn:focus-visible,
+        .form-input:focus-visible,
+        .file-upload-label:focus-visible {
+          outline: 3px solid #c084fc;
+          outline-offset: 3px;
+        }
+
+        /* Print styles */
+        @media print {
+          .toast-container,
+          .submit-btn,
+          .clear-btn {
+            display: none;
+          }
+
+          .upload-wrapper {
+            background: white;
           }
         }
       `}</style>

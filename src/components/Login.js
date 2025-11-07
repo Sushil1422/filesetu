@@ -1,4 +1,3 @@
-// src/components/Login.js
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -20,10 +19,13 @@ const Login = () => {
   const [forgotPasswordError, setForgotPasswordError] = useState("");
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (currentUser && userRole) {
-      navigate("/dashboard", { replace: true });
+      if (userRole === "admin") {
+        navigate("/dashboard");
+      } else if (userRole === "subadmin") {
+        navigate("/subadmin-dashboard");
+      }
     }
   }, [currentUser, userRole, navigate]);
 
@@ -41,7 +43,6 @@ const Login = () => {
       setError("");
       setLoading(true);
       await login(formData.email, formData.password);
-      // Navigation will happen automatically via useEffect
     } catch (error) {
       setError("Failed to login: " + error.message);
     } finally {
@@ -640,9 +641,6 @@ const Login = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="password-toggle"
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
                   >
                     {showPassword ? (
                       <svg
@@ -744,7 +742,7 @@ const Login = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
                     />
                   </svg>
                   Password reset email sent! Check your inbox.

@@ -93,6 +93,8 @@ const LogBook = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
+  const printRef = useRef();
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     fuel: "",
@@ -105,7 +107,8 @@ const LogBook = () => {
     arrPeriod: "PM",
     from: "",
     to: "",
-    meterReading: "",
+    beforeMeterReading: "",
+    afterMeterReading: "",
     kilometers: "",
     purpose: "",
     usedBy: "",
@@ -117,6 +120,22 @@ const LogBook = () => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
   };
+
+  // Auto-calculate kilometers when meter readings change
+  useEffect(() => {
+    const before = parseFloat(formData.beforeMeterReading);
+    const after = parseFloat(formData.afterMeterReading);
+
+    if (!isNaN(before) && !isNaN(after) && after > before) {
+      const calculated = (after - before).toFixed(1);
+      setFormData((prev) => ({ ...prev, kilometers: calculated }));
+    } else if (formData.beforeMeterReading && formData.afterMeterReading) {
+      // Clear if invalid
+      if (formData.kilometers) {
+        setFormData((prev) => ({ ...prev, kilometers: "" }));
+      }
+    }
+  }, [formData.beforeMeterReading, formData.afterMeterReading]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -186,13 +205,31 @@ const LogBook = () => {
       newErrors.from = "Starting location is required";
     if (!formData.to?.trim()) newErrors.to = "Destination is required";
 
-    if (!formData.meterReading) {
-      newErrors.meterReading = "Meter reading is required";
+    // Before meter reading validation
+    if (!formData.beforeMeterReading) {
+      newErrors.beforeMeterReading = "Before reading is required";
     } else if (
-      isNaN(formData.meterReading) ||
-      Number(formData.meterReading) < 0
+      isNaN(formData.beforeMeterReading) ||
+      Number(formData.beforeMeterReading) < 0
     ) {
-      newErrors.meterReading = "Enter a valid number";
+      newErrors.beforeMeterReading = "Enter a valid number";
+    }
+
+    // After meter reading validation
+    if (!formData.afterMeterReading) {
+      newErrors.afterMeterReading = "After reading is required";
+    } else if (
+      isNaN(formData.afterMeterReading) ||
+      Number(formData.afterMeterReading) < 0
+    ) {
+      newErrors.afterMeterReading = "Enter a valid number";
+    }
+
+    // Check after > before
+    const before = parseFloat(formData.beforeMeterReading);
+    const after = parseFloat(formData.afterMeterReading);
+    if (!isNaN(before) && !isNaN(after) && after <= before) {
+      newErrors.afterMeterReading = "After reading must be greater than before";
     }
 
     if (!formData.kilometers) {
@@ -234,7 +271,8 @@ const LogBook = () => {
       arrPeriod: "PM",
       from: "",
       to: "",
-      meterReading: "",
+      beforeMeterReading: "",
+      afterMeterReading: "",
       kilometers: "",
       purpose: "",
       usedBy: "",
@@ -275,7 +313,8 @@ const LogBook = () => {
         arrivalTime,
         from: formData.from,
         to: formData.to,
-        meterReading: formData.meterReading,
+        beforeMeterReading: formData.beforeMeterReading,
+        afterMeterReading: formData.afterMeterReading,
         kilometers: formData.kilometers,
         purpose: formData.purpose,
         usedBy: formData.usedBy,
@@ -323,7 +362,8 @@ const LogBook = () => {
         arrivalTime,
         from: formData.from,
         to: formData.to,
-        meterReading: formData.meterReading,
+        beforeMeterReading: formData.beforeMeterReading,
+        afterMeterReading: formData.afterMeterReading,
         kilometers: formData.kilometers,
         purpose: formData.purpose,
         usedBy: formData.usedBy,
@@ -376,7 +416,9 @@ const LogBook = () => {
       arrPeriod: arrPieces.pp,
       from: selectedLog.from,
       to: selectedLog.to,
-      meterReading: selectedLog.meterReading,
+      beforeMeterReading:
+        selectedLog.beforeMeterReading || selectedLog.meterReading || "",
+      afterMeterReading: selectedLog.afterMeterReading || "",
       kilometers: selectedLog.kilometers,
       purpose: selectedLog.purpose,
       usedBy: selectedLog.usedBy,
@@ -386,200 +428,145 @@ const LogBook = () => {
     setShowAddModal(true);
   };
 
-  // --- PRINT/PDF HTML (A1 layout + R1 wider "शेरा") ---
-  const generatePrintHTML = () => {
-    // Widths sum to 100% with "शेरा" = 14% (R1)
-    // Purvatha = 8% split into 4% + 4%
-    return `
-      <!DOCTYPE html>
-      <html lang="mr">
-        <head>
-          <meta charset="UTF-8" />
-          <title>सरकारी मोटार वाहनांकरिता लॉग बुकचा नमुना</title>
-          <style>
-            @page {
-              margin: 15mm;
-              size: A4 landscape;
-            }
-            * { box-sizing: border-box; }
-            html, body { background: #ffffff; }
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              color: #0f172a;
-              padding: 20px;
-            }
-            h1 {
-              text-align: center;
-              margin: 0 0 16px 0;
-              font-size: 24px;
-              font-weight: 700;
-              color: #1e293b;
-              border-bottom: 4px solid #3b82f6;
-              padding-bottom: 10px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              table-layout: fixed; /* prevents overlap */
-              font-size: 11px;
-            }
-            thead th {
-             
-              color: #000000ff;
-              border: 1px solid #1d4ed8;
-              text-align: center;
-              font-weight: 700;
-              padding: 8px 6px;
-              line-height: 1.25;
-              vertical-align: middle;
-              word-wrap: break-word;
-              white-space: normal;
-            }
-            tbody td {
-              border: 1px solid #333;
-              padding: 8px 6px;
-              vertical-align: top;
-              word-wrap: break-word;
-              white-space: normal;
-            }
-            tbody tr:nth-child(even) { background: #f8fafc; }
-            .w-idx { width: 3%; }
-            .w-date { width: 10%; }
-            .w-supply { width: 10%; }
-            .w-supply-child { width: 5%; }
-            .w-dep { width: 8%; }
-            .w-arr { width: 8%; }
-            .w-from { width: 8%; }
-            .w-to { width: 8%; }
-            .w-meter { width: 7%; }
-            .w-km { width: 7%; }
-            .w-purpose { width: 11%; }
-            .w-user { width: 9%; }
-            .w-remark { width: 10%; }
-            .td-center { text-align: center; }
-            .td-right { text-align: right; }
-            .footer {
-              margin-top: 16px;
-              text-align: center;
-              font-size: 10px;
-              color: #64748b;
-              border-top: 1px solid #e2e8f0;
-              padding-top: 8px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>सरकारी मोटार वाहनांकरिता लॉग बुकचा नमुना</h1>
-          <table>
-            <thead>
-              <tr>
-                <th class="w-idx" rowspan="2">क्र.</th>
-                <th class="w-date" rowspan="2">तारीख</th>
-                <th class="w-supply" colspan="2">पुरवठा</th>
-                <th class="w-dep" rowspan="2">गाडी नेण्याची वेळ</th>
-                <th class="w-arr" rowspan="2">गाडी आल्याची वेळ</th>
-                <th class="w-from" rowspan="2">कोठून</th>
-                <th class="w-to" rowspan="2">कोठे</th>
-                <th class="w-meter" rowspan="2">मिटरवरील पाठ्यांक</th>
-                <th class="w-km" rowspan="2">किती किलोमीटर</th>
-                <th class="w-purpose" rowspan="2">प्रवासाचा हेतू</th>
-                <th class="w-user" rowspan="2">गाडी कोणी वापरली</th>
-                <th class="w-remark" rowspan="2">शेरा</th>
+  // --- PRINT HTML (Hidden container for printing) ---
+  const PrintContent = () => (
+    <div ref={printRef} style={{ display: "none" }}>
+      <div className="print-container">
+        <h1 className="print-title">
+          सरकारी मोटार वाहनांकरिता लॉग बुकचा नमुना
+        </h1>
+        <table className="print-table">
+          <thead>
+            <tr>
+              <th className="w-idx" rowSpan="2">
+                क्र.
+              </th>
+              <th className="w-date" rowSpan="2">
+                तारीख
+              </th>
+              <th className="w-supply" colSpan="2">
+                पुरवठा
+              </th>
+              <th className="w-dep" rowSpan="2">
+                गाडी नेण्याची वेळ
+              </th>
+              <th className="w-arr" rowSpan="2">
+                गाडी आल्याची वेळ
+              </th>
+              <th className="w-from" rowSpan="2">
+                कोठून
+              </th>
+              <th className="w-to" rowSpan="2">
+                कोठे
+              </th>
+              <th className="w-meter" colSpan="2">
+                प्रवासापूर्वी व नंतरचे मिटरवरील पाठ्यांक
+              </th>
+              <th className="w-km" rowSpan="2">
+                किती किलोमीटर
+              </th>
+              <th className="w-purpose" rowSpan="2">
+                प्रवासाचा हेतू
+              </th>
+              <th className="w-user" rowSpan="2">
+                गाडी कोणी वापरली
+              </th>
+              <th className="w-remark" rowSpan="2">
+                शेरा
+              </th>
+            </tr>
+            <tr>
+              <th className="w-supply-child">जळण</th>
+              <th className="w-supply-child">तेल</th>
+              <th className="w-meter-child">पूर्वी</th>
+              <th className="w-meter-child">नंतर</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map((log, index) => (
+              <tr key={log.id}>
+                <td className="td-center">{index + 1}</td>
+                <td>{new Date(log.date).toLocaleDateString("en-GB")}</td>
+                <td className="td-center">{log.fuel || "-"}</td>
+                <td className="td-center">{log.oil || "-"}</td>
+                <td>{log.departureTime || ""}</td>
+                <td>{log.arrivalTime || ""}</td>
+                <td>{log.from || ""}</td>
+                <td>{log.to || ""}</td>
+                <td className="td-right">
+                  {log.beforeMeterReading || log.meterReading || ""}
+                </td>
+                <td className="td-right">{log.afterMeterReading || ""}</td>
+                <td className="td-center">
+                  <strong>{log.kilometers || ""}</strong>
+                </td>
+                <td>{log.purpose || ""}</td>
+                <td>{log.usedBy || ""}</td>
+                <td></td>
               </tr>
-              <tr>
-                <th class="w-supply-child">जळण</th>
-                <th class="w-supply-child">तेल</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${logs
-                .map(
-                  (log, index) => `
-                <tr>
-                  <td class="td-center">${index + 1}</td>
-                  <td>${new Date(log.date).toLocaleDateString("en-GB")}</td>
-                  <td class="td-center">${log.fuel || "-"}</td>
-                  <td class="td-center">${log.oil || "-"}</td>
-                  <td>${log.departureTime || ""}</td>
-                  <td>${log.arrivalTime || ""}</td>
-                  <td>${log.from || ""}</td>
-                  <td>${log.to || ""}</td>
-                  <td class="td-right">${log.meterReading || ""}</td>
-                  <td class="td-center"><strong>${
-                    log.kilometers || ""
-                  }</strong></td>
-                  <td>${log.purpose || ""}</td>
-                  <td>${log.usedBy || ""}</td>
-                  <td></td>
-                </tr>`
-                )
-                .join("")}
-            </tbody>
-          </table>
-          <div class="footer">
-            <p><strong>Generated on:</strong> ${new Date().toLocaleString(
-              "en-GB",
-              {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            )}</p>
-          </div>
-        </body>
-      </html>
-    `;
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">
+          <p>
+            <strong>Generated on:</strong>{" "}
+            {new Date().toLocaleString("en-GB", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // --- Print using window.print() on current page ---
+  const handlePrint = () => {
+    // Temporarily show print content
+    const printElement = printRef.current;
+    if (!printElement) return;
+
+    printElement.style.display = "block";
+
+    // Hide main content
+    const mainContent = document.querySelector(".logbook-container");
+    const originalDisplay = mainContent.style.display;
+    mainContent.style.display = "none";
+
+    // Trigger print
+    window.print();
+
+    // Restore after print
+    setTimeout(() => {
+      printElement.style.display = "none";
+      mainContent.style.display = originalDisplay;
+    }, 100);
   };
 
-  // --- Download PDF (stable rendering & no overlap) ---
+  // --- Download PDF ---
   const downloadPDF = async () => {
     try {
       showToast("Generating PDF...", "success");
 
-      // Create hidden iframe to render print HTML
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "absolute";
-      iframe.style.left = "-9999px";
-      iframe.style.top = "0";
-      iframe.style.width = "1122px"; // A4 landscape ~ 96DPI
-      iframe.style.height = "794px";
-      iframe.setAttribute("aria-hidden", "true");
-      document.body.appendChild(iframe);
+      const printElement = printRef.current;
+      if (!printElement) return;
 
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(generatePrintHTML());
-      iframeDoc.close();
+      // Temporarily show for rendering
+      printElement.style.display = "block";
 
-      // Wait for layout/paint to complete (more reliable than fixed timeout)
-      await new Promise((resolve) => {
-        const settle = () => {
-          // two rafs to ensure styles applied
-          requestAnimationFrame(() => requestAnimationFrame(resolve));
-        };
-        if (iframe.contentWindow) {
-          // fonts & styles settle
-          iframe.contentWindow.onload = settle;
-          // Fallback if onload doesn't fire (e.g., same document write)
-          setTimeout(settle, 600);
-        } else {
-          setTimeout(settle, 600);
-        }
-      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Snapshot the iframe contents
-      const canvas = await html2canvas(iframeDoc.body, {
+      const canvas = await html2canvas(printElement, {
         backgroundColor: "#ffffff",
-        scale: 2.5, // high-res
+        scale: 2.5,
         useCORS: true,
         logging: false,
-        windowWidth: 1122,
-        windowHeight: 794,
       });
 
-      document.body.removeChild(iframe);
+      printElement.style.display = "none";
 
       const imgData = canvas.toDataURL("image/png", 1.0);
       const pdf = new jsPDF("l", "mm", "a4");
@@ -599,13 +586,6 @@ const LogBook = () => {
       console.error("PDF generation error:", error);
       showToast("Failed to generate PDF", "error");
     }
-  };
-
-  const handlePrint = () => {
-    const win = window.open("", "_blank");
-    win.document.write(generatePrintHTML());
-    win.document.close();
-    setTimeout(() => win.print(), 500);
   };
 
   return (
@@ -628,6 +608,9 @@ const LogBook = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hidden Print Content */}
+      <PrintContent />
 
       {/* Main */}
       <motion.div
@@ -766,7 +749,11 @@ const LogBook = () => {
                       <td>
                         <div className="td-distance">
                           <strong>{log.kilometers} km</strong>
-                          <small>Meter: {log.meterReading}</small>
+                          <small>
+                            Before:{" "}
+                            {log.beforeMeterReading || log.meterReading || "-"}
+                          </small>
+                          <small>After: {log.afterMeterReading || "-"}</small>
                         </div>
                       </td>
                       <td>
@@ -1029,25 +1016,49 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Meter */}
+                  {/* Before Meter Reading */}
                   <div className="form-group">
                     <label>
-                      Meter Reading <span className="required">*</span>
+                      Before Travelling Reading{" "}
+                      <span className="required">*</span>
                     </label>
                     <input
-                      name="meterReading"
+                      name="beforeMeterReading"
                       type="number"
-                      placeholder="Odometer reading"
-                      value={formData.meterReading}
+                      placeholder="Before reading"
+                      value={formData.beforeMeterReading}
                       onChange={handleChange}
-                      className={errors.meterReading ? "error" : ""}
+                      className={errors.beforeMeterReading ? "error" : ""}
                     />
-                    {errors.meterReading && (
-                      <span className="error-text">{errors.meterReading}</span>
+                    {errors.beforeMeterReading && (
+                      <span className="error-text">
+                        {errors.beforeMeterReading}
+                      </span>
                     )}
                   </div>
 
-                  {/* Km */}
+                  {/* After Meter Reading */}
+                  <div className="form-group">
+                    <label>
+                      After Travelling Reading{" "}
+                      <span className="required">*</span>
+                    </label>
+                    <input
+                      name="afterMeterReading"
+                      type="number"
+                      placeholder="After reading"
+                      value={formData.afterMeterReading}
+                      onChange={handleChange}
+                      className={errors.afterMeterReading ? "error" : ""}
+                    />
+                    {errors.afterMeterReading && (
+                      <span className="error-text">
+                        {errors.afterMeterReading}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Km (Auto-calculated) */}
                   <div className="form-group">
                     <label>
                       Kilometers <span className="required">*</span>
@@ -1056,10 +1067,15 @@ const LogBook = () => {
                       name="kilometers"
                       type="number"
                       step="0.1"
-                      placeholder="Total km"
+                      placeholder="Auto-calculated"
                       value={formData.kilometers}
                       onChange={handleChange}
                       className={errors.kilometers ? "error" : ""}
+                      readOnly
+                      style={{
+                        backgroundColor: "#f1f5f9",
+                        cursor: "not-allowed",
+                      }}
                     />
                     {errors.kilometers && (
                       <span className="error-text">{errors.kilometers}</span>
@@ -1195,11 +1211,24 @@ const LogBook = () => {
 
                 <div className="detail-row">
                   <div className="detail-label">
+                    <FileText size={16} /> Meter Readings
+                  </div>
+                  <div className="detail-value">
+                    Before:{" "}
+                    {selectedLog.beforeMeterReading ||
+                      selectedLog.meterReading ||
+                      "-"}
+                    <br />
+                    After: {selectedLog.afterMeterReading || "-"}
+                  </div>
+                </div>
+
+                <div className="detail-row">
+                  <div className="detail-label">
                     <FileText size={16} /> Distance
                   </div>
                   <div className="detail-value">
-                    <strong>{selectedLog.kilometers} km</strong> (Meter:{" "}
-                    {selectedLog.meterReading})
+                    <strong>{selectedLog.kilometers} km</strong>
                   </div>
                 </div>
 
@@ -1343,7 +1372,7 @@ const LogBook = () => {
         /* Modals */
         .logbook-modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 5000; padding: 1rem; overflow-y: auto; }
         .logbook-modal-content { background: white; border-radius: 16px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); margin: auto; }
-        .compact-modal { max-width: 700px; }
+        .compact-modal { max-width: 800px; }
         .detail-modal { max-width: 550px; }
 
         .logbook-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 2px solid #e2e8f0; background: linear-gradient(135deg, #eff6ff, #dbeafe); position: sticky; top: 0; z-index: 10; }
@@ -1368,7 +1397,7 @@ const LogBook = () => {
         .error-text { color: #dc2626; font-size: 0.75rem; margin-top: 0.25rem; }
         .form-group textarea { resize: vertical; min-height: 60px; }
 
-        .time-12h { display: grid; grid-template-columns: 1fr auto 1fr 1fr; gap: 0.4rem; align-items: center; }
+        .time-12h { display: grid; grid-template-columns: 1fr auto 1fr 1fr; gap: 0.4rem; align-items: center; width:220px; }
         .time-12h .sep { text-align: center; font-weight: 700; color: #64748b; }
 
         .compact-modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.25rem 1.5rem; border-top: 2px solid #e2e8f0; background: #f8fafc; position: sticky; bottom: 0; }
@@ -1388,6 +1417,88 @@ const LogBook = () => {
         .btn-delete-detail:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
         .btn-edit-detail { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
         .btn-edit-detail:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); }
+
+        /* Print Styles */
+        @media print {
+          body * { visibility: hidden; }
+          .print-container, .print-container * { visibility: visible; }
+          .print-container { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+
+        .print-container {
+          background: #ffffff;
+          color: #0f172a;
+          padding: 20px;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .print-title {
+          text-align: center;
+          margin: 0 0 16px 0;
+          font-size: 24px;
+          font-weight: 700;
+          color: #1e293b;
+          border-bottom: 4px solid #3b82f6;
+          padding-bottom: 10px;
+        }
+
+        .print-table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          font-size: 11px;
+        }
+
+        .print-table thead th {
+          color: #000000ff;
+          border: 1px solid #1d4ed8;
+          text-align: center;
+          font-weight: 700;
+          padding: 8px 6px;
+          line-height: 1.25;
+          vertical-align: middle;
+          word-wrap: break-word;
+          white-space: normal;
+        }
+
+        .print-table tbody td {
+          border: 1px solid #333;
+          padding: 8px 6px;
+          vertical-align: top;
+          word-wrap: break-word;
+          white-space: normal;
+        }
+
+        .print-table tbody tr:nth-child(even) {
+          background: #f8fafc;
+        }
+
+        .w-idx { width: 3%; }
+        .w-date { width: 9%; }
+        .w-supply { width: 14%; }
+        .w-supply-child { width: 7%; }
+        .w-dep { width: 10%; }
+        .w-arr { width: 10%; }
+        .w-from { width: 10%; }
+        .w-to { width: 10%; }
+        .w-meter { width: 14%; }
+        .w-meter-child { width: 7%; }
+        .w-km { width: 6%; }
+        .w-purpose { width: 11%; }
+        .w-user { width: 10%; }
+        .w-remark { width: 10%; }
+
+        .td-center { text-align: center; }
+        .td-right { text-align: right; }
+
+        .print-footer {
+          margin-top: 16px;
+          text-align: center;
+          font-size: 10px;
+          color: #64748b;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 8px;
+        }
 
         @media (max-width: 968px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) {

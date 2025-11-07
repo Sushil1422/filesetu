@@ -490,6 +490,12 @@ const FileRecordsList = () => {
     setShowEditModal(true);
   };
 
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditRecordId(null);
+    setSelectedRecord(null);
+  };
+
   const handleDownload = async (record) => {
     try {
       showToast("⏳ Preparing download...", "info");
@@ -725,6 +731,7 @@ const FileRecordsList = () => {
         userRole={userRole}
       />
 
+      {/* Edit Modal with Cancel Button */}
       {showEditModal && (
         <AnimatePresence>
           <motion.div
@@ -732,7 +739,7 @@ const FileRecordsList = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setShowEditModal(false)}
+            onClick={handleCloseEditModal}
           >
             <motion.div
               className="edit-modal"
@@ -741,10 +748,19 @@ const FileRecordsList = () => {
               exit={{ scale: 0.9 }}
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Close Button in Top Right Corner */}
+              <button
+                className="edit-modal-close-btn"
+                onClick={handleCloseEditModal}
+                title="Close"
+              >
+                <X size={24} />
+              </button>
+
               <FileUpload
                 selectedId={editRecordId}
                 recordData={selectedRecord}
-                onClose={() => setShowEditModal(false)}
+                onClose={handleCloseEditModal}
               />
             </motion.div>
           </motion.div>
@@ -1455,6 +1471,37 @@ const FileRecordsList = () => {
           max-height: 95vh;
           overflow-y: auto;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          position: relative;
+        }
+
+        /* Edit Modal Close Button */
+        .edit-modal-close-btn {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          z-index: 10;
+          background: linear-gradient(135deg, #fee2e2, #fecaca);
+          border: none;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #991b1b;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .edit-modal-close-btn:hover {
+          background: linear-gradient(135deg, #fecaca, #fca5a5);
+          transform: scale(1.1) rotate(90deg);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .edit-modal-close-btn:active {
+          transform: scale(0.95) rotate(90deg);
         }
 
         /* Toast Styles */
@@ -1577,6 +1624,17 @@ const FileRecordsList = () => {
           .dialog-content {
             width: 95%;
           }
+
+          .edit-modal {
+            max-width: 98%;
+          }
+
+          .edit-modal-close-btn {
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 36px;
+            height: 36px;
+          }
         }
 
         @media (max-width: 480px) {
@@ -1608,6 +1666,11 @@ const FileRecordsList = () => {
 
           .compact-preview-container {
             min-height: 200px;
+          }
+
+          .edit-modal-close-btn {
+            width: 32px;
+            height: 32px;
           }
         }
       `}</style>
