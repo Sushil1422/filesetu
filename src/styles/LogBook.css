@@ -1,0 +1,315 @@
+/* ========================================
+   LOGBOOK RESPONSIVE STYLES
+   ======================================== */
+
+/* Base styles are in LogBook.js component */
+
+/* Tablet & Desktop Optimizations (1024px+) */
+@media (min-width: 1024px) {
+  .logbook-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+/* Tablet Portrait (768px - 1023px) */
+@media (max-width: 1023px) {
+  .logbook-header {
+    flex-wrap: wrap;
+  }
+  
+  .logbook-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .logbook-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .logbook-table {
+    min-width: 1000px;
+  }
+  
+  .form-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile & Tablet (600px - 767px) */
+@media (max-width: 767px) {
+  .logbook-container {
+    padding: 1rem;
+  }
+  
+  .logbook-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .logbook-actions {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+  
+  .logbook-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .logbook-table {
+    min-width: 950px;
+  }
+  
+  .logbook-table th,
+  .logbook-table td {
+    padding: 0.75rem 0.6rem;
+    font-size: 0.875rem;
+  }
+  
+  .logbook-table th {
+    font-size: 0.8rem;
+  }
+  
+  .logbook-modal-content {
+    max-width: 95%;
+    max-height: 92vh;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .time-picker-group {
+    gap: 0.4rem;
+  }
+  
+  .time-select {
+    padding: 0.65rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .logbook-modal-footer {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  .btn-cancel,
+  .btn-save {
+    width: 100%;
+  }
+  
+  .detail-modal-actions {
+    flex-direction: column;
+  }
+  
+  .btn-edit,
+  .btn-delete {
+    width: 100%;
+  }
+}
+
+/* Small Mobile (480px - 599px) */
+@media (max-width: 599px) {
+  .logbook-container {
+    padding: 0.85rem;
+  }
+  
+  .logbook-header h2 {
+    font-size: 1.35rem;
+  }
+  
+  .logbook-table {
+    min-width: 850px;
+    font-size: 0.85rem;
+  }
+  
+  .logbook-table th,
+  .logbook-table td {
+    padding: 0.65rem 0.5rem;
+    font-size: 0.825rem;
+  }
+  
+  .logbook-modal-header h3 {
+    font-size: 1.05rem;
+  }
+  
+  .form-group label {
+    font-size: 0.85rem;
+  }
+  
+  .form-group input,
+  .form-group select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.65rem 0.85rem;
+  }
+  
+  .time-select {
+    font-size: 16px;
+    padding: 0.6rem 0.45rem;
+  }
+  
+  .logbook-modal-footer {
+    padding: 0.85rem;
+  }
+  
+  .btn-cancel,
+  .btn-save {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .delete-confirm-modal {
+    max-width: 90%;
+  }
+  
+  .delete-icon-container {
+    padding: 1.5rem 1rem 0.85rem;
+  }
+  
+  .delete-content {
+    padding: 1.25rem;
+  }
+  
+  .delete-content h3 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Extra Small Mobile (< 480px) */
+@media (max-width: 479px) {
+  .logbook-container {
+    padding: 0.6rem;
+  }
+  
+  .logbook-header h2 {
+    font-size: 1.2rem;
+    gap: 0.5rem;
+  }
+  
+  .logbook-actions button {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .logbook-table {
+    min-width: 750px;
+  }
+  
+  .logbook-modal-content {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .logbook-modal-header {
+    padding: 0.85rem 1rem;
+  }
+  
+  .logbook-form {
+    padding: 0.85rem 1rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .time-picker-group {
+    gap: 0.3rem;
+  }
+  
+  .time-select {
+    padding: 0.55rem 0.4rem;
+    font-size: 0.875rem;
+  }
+  
+  .delete-confirm-modal {
+    max-width: 95%;
+    margin: 0.5rem;
+  }
+  
+  .delete-icon-container {
+    padding: 1.25rem 1rem 0.75rem;
+  }
+  
+  .delete-icon-circle {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .delete-content {
+    padding: 1rem;
+  }
+  
+  .delete-actions {
+    padding: 1rem;
+    flex-direction: column;
+  }
+  
+  .btn-cancel-delete,
+  .btn-confirm-delete {
+    width: 100%;
+  }
+  
+  /* Print preview adjustments */
+  .print-preview-modal {
+    max-width: 95%;
+    margin: 0.5rem;
+  }
+}
+
+/* Extra Small Mobile (< 360px) */
+@media (max-width: 359px) {
+  .logbook-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .logbook-table {
+    min-width: 700px;
+  }
+  
+  .logbook-modal-content {
+    margin: 0.25rem;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 0.6rem 0.75rem;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .logbook-table tbody tr {
+    -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
+  }
+  
+  .logbook-actions button,
+  .btn-save,
+  .btn-cancel {
+    min-height: 44px; /* Touch target size */
+  }
+  
+  .time-select {
+    min-height: 44px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .logbook-modal-content {
+    max-height: 85vh;
+  }
+  
+  .logbook-form {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  .form-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

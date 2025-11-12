@@ -1,0 +1,295 @@
+/* ========================================
+   FILE UPLOAD RESPONSIVE STYLES
+   ======================================== */
+
+/* Base styles are in FileUpload.js component */
+
+/* Tablet & Desktop Optimizations (1024px+) */
+@media (min-width: 1024px) {
+  .file-upload-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .upload-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet Portrait (768px - 1023px) */
+@media (max-width: 1023px) {
+  .file-upload-header {
+    flex-wrap: wrap;
+  }
+  
+  .file-upload-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .upload-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .file-preview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile & Tablet (600px - 767px) */
+@media (max-width: 767px) {
+  .file-upload-container {
+    padding: 1rem;
+  }
+  
+  .file-upload-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .file-upload-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .upload-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .file-input-wrapper {
+    padding: 1.5rem 1rem;
+  }
+  
+  .file-preview-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .file-preview-card {
+    padding: 1rem;
+  }
+  
+  .upload-modal-content {
+    max-width: 95%;
+    max-height: 92vh;
+  }
+  
+  .upload-modal-header {
+    padding: 1rem;
+  }
+  
+  .upload-form {
+    padding: 1rem;
+  }
+  
+  .upload-modal-footer {
+    padding: 1rem;
+    flex-direction: column;
+  }
+  
+  .btn-submit,
+  .btn-cancel {
+    width: 100%;
+  }
+  
+  .file-details-modal {
+    max-width: 90%;
+  }
+  
+  .file-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small Mobile (480px - 599px) */
+@media (max-width: 599px) {
+  .file-upload-container {
+    padding: 0.85rem;
+  }
+  
+  .file-upload-header h2 {
+    font-size: 1.35rem;
+  }
+  
+  .file-upload-actions button {
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .upload-form-grid {
+    gap: 0.85rem;
+  }
+  
+  .form-group label {
+    font-size: 0.85rem;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.65rem 0.85rem;
+  }
+  
+  .file-input-wrapper {
+    padding: 1.25rem 0.85rem;
+  }
+  
+  .file-preview-card {
+    padding: 0.85rem;
+  }
+  
+  .upload-modal-header h3 {
+    font-size: 1.05rem;
+  }
+  
+  .btn-submit,
+  .btn-cancel {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .file-details-modal {
+    max-width: 95%;
+  }
+  
+  .file-details-header {
+    padding: 1rem;
+  }
+  
+  .file-details-content {
+    padding: 1rem;
+  }
+  
+  .file-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Extra Small Mobile (< 480px) */
+@media (max-width: 479px) {
+  .file-upload-container {
+    padding: 0.6rem;
+  }
+  
+  .file-upload-header h2 {
+    font-size: 1.2rem;
+    gap: 0.5rem;
+  }
+  
+  .file-upload-actions button {
+    padding: 0.6rem 0.85rem;
+    font-size: 0.875rem;
+  }
+  
+  .upload-form-grid {
+    gap: 0.75rem;
+  }
+  
+  .form-group {
+    margin-bottom: 0.85rem;
+  }
+  
+  .file-input-wrapper {
+    padding: 1rem 0.75rem;
+  }
+  
+  .upload-modal-content {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .upload-modal-header {
+    padding: 0.85rem;
+  }
+  
+  .upload-form {
+    padding: 0.85rem;
+  }
+  
+  .upload-modal-footer {
+    padding: 0.85rem;
+  }
+  
+  .file-preview-card {
+    padding: 0.75rem;
+  }
+  
+  .file-details-modal {
+    max-width: 95%;
+    margin: 0.5rem;
+  }
+  
+  .file-actions-grid {
+    padding: 1rem;
+  }
+}
+
+/* Extra Small Mobile (< 360px) */
+@media (max-width: 359px) {
+  .file-upload-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .upload-modal-content {
+    margin: 0.25rem;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 0.6rem 0.75rem;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .file-preview-card {
+    -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
+  }
+  
+  .file-upload-actions button,
+  .btn-submit,
+  .btn-cancel {
+    min-height: 44px; /* Touch target size */
+  }
+  
+  .form-group input,
+  .form-group select {
+    min-height: 44px;
+  }
+  
+  .file-input-wrapper {
+    min-height: 100px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .upload-modal-content {
+    max-height: 90vh;
+  }
+  
+  .upload-form {
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+  
+  .upload-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Print styles */
+@media print {
+  .file-upload-actions,
+  .file-preview-card button,
+  .upload-modal-footer {
+    display: none;
+  }
+  
+  .file-upload-container {
+    padding: 0;
+  }
+}

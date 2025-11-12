@@ -1,150 +1,367 @@
 /* src/components/Auth.css */
+
+/* ========================================
+   AUTH CONTAINER & FORM
+   ======================================== */
 .auth-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
 }
 
 .auth-form {
   background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-form h2 {
   text-align: center;
-  margin-bottom: 1.5rem;
-  color: #333;
+  margin-bottom: 1.75rem;
+  color: #1a202c;
+  font-size: 1.75rem;
+  font-weight: 700;
 }
 
+/* ========================================
+   FORM ELEMENTS
+   ======================================== */
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: bold;
-  color: #555;
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.9rem;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.85rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
   font-size: 1rem;
   box-sizing: border-box;
+  transition: all 0.3s ease;
+  background: white;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.form-group input::placeholder {
+  color: #a0aec0;
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
 .auth-button {
   width: 100%;
-  padding: 0.75rem;
-  background-color: #007bff;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  min-height: 48px;
 }
 
 .auth-button:hover {
-  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.auth-button:active {
+  transform: translateY(0);
 }
 
 .auth-button:disabled {
-  background-color: #6c757d;
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
   cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: none;
 }
 
+/* ========================================
+   ERROR MESSAGE
+   ======================================== */
 .error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  border: 1px solid #f5c6cb;
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
+  padding: 0.85rem;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  border: 2px solid #f87171;
+  font-weight: 500;
+  font-size: 0.9rem;
+  animation: shake 0.4s ease;
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* ========================================
+   AUTH LINKS
+   ======================================== */
 .auth-link {
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
+  font-size: 0.95rem;
+  color: #4b5563;
 }
 
 .auth-link a {
-  color: #007bff;
+  color: #667eea;
   text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
 }
 
 .auth-link a:hover {
+  color: #764ba2;
   text-decoration: underline;
 }
 
-/* Dashboard styles */
+/* ========================================
+   DASHBOARD STYLES
+   ======================================== */
 .dashboard {
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #fef3c7 0%, #e9d5ff 50%, #fce7f3 100%);
 }
 
 .dashboard-header {
-  background-color: #007bff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 1rem 2rem;
+  padding: 1.25rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .logout-button {
-  background-color: #dc3545;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 .logout-button:hover {
-  background-color: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
 .dashboard-content {
   padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .user-info {
   background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
+  padding: 1.75rem;
+  border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 2px solid #e9d5ff;
 }
 
 .admin-section,
 .subadmin-section {
   background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.75rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid;
 }
 
 .admin-section {
-  border-left: 4px solid #28a745;
+  border-left-color: #10b981;
 }
 
 .subadmin-section {
-  border-left: 4px solid #ffc107;
+  border-left-color: #f59e0b;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Tablet (768px - 1023px) */
+@media (max-width: 1023px) {
+  .auth-form {
+    padding: 2rem;
+    max-width: 400px;
+  }
+  
+  .dashboard-content {
+    padding: 1.5rem;
+  }
+  
+  .dashboard-header {
+    padding: 1rem 1.5rem;
+  }
+}
+
+/* Mobile (600px - 767px) */
+@media (max-width: 767px) {
+  .auth-container {
+    padding: 0.75rem;
+  }
+  
+  .auth-form {
+    padding: 1.75rem;
+    max-width: 100%;
+  }
+  
+  .auth-form h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 0.75rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .auth-button {
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+  
+  .dashboard-header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .logout-button {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .dashboard-content {
+    padding: 1rem;
+  }
+  
+  .user-info,
+  .admin-section,
+  .subadmin-section {
+    padding: 1.25rem;
+  }
+}
+
+/* Small Mobile (< 600px) */
+@media (max-width: 599px) {
+  .auth-container {
+    padding: 0.5rem;
+  }
+  
+  .auth-form {
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .auth-form h2 {
+    font-size: 1.35rem;
+  }
+  
+  .form-group label {
+    font-size: 0.875rem;
+  }
+  
+  .error-message {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .auth-link {
+    font-size: 0.9rem;
+  }
+  
+  .dashboard-content {
+    padding: 0.85rem;
+  }
+}
+
+/* Extra Small Mobile (< 360px) */
+@media (max-width: 359px) {
+  .auth-form {
+    padding: 1.25rem;
+  }
+  
+  .auth-form h2 {
+    font-size: 1.25rem;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .auth-button {
+    font-size: 0.9rem;
+  }
+  
+  .user-info,
+  .admin-section,
+  .subadmin-section {
+    padding: 1rem;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .auth-button {
+    min-height: 48px; /* Touch target size */
+  }
+  
+  .form-group input,
+  .form-group select {
+    min-height: 44px;
+  }
 }

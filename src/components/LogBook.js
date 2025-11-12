@@ -30,6 +30,7 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
 
 /** ---------- Time helpers (12-hour) ---------- */
@@ -89,9 +90,11 @@ const LogBook = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   const printRef = useRef();
 
@@ -121,7 +124,7 @@ const LogBook = () => {
     setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
   };
 
-  // Auto-calculate kilometers when meter readings change
+  // Auto-calculate kilometers
   useEffect(() => {
     const before = parseFloat(formData.beforeMeterReading);
     const after = parseFloat(formData.afterMeterReading);
@@ -130,13 +133,13 @@ const LogBook = () => {
       const calculated = (after - before).toFixed(1);
       setFormData((prev) => ({ ...prev, kilometers: calculated }));
     } else if (formData.beforeMeterReading && formData.afterMeterReading) {
-      // Clear if invalid
       if (formData.kilometers) {
         setFormData((prev) => ({ ...prev, kilometers: "" }));
       }
     }
   }, [formData.beforeMeterReading, formData.afterMeterReading]);
 
+  // Fetch logs from Firebase
   useEffect(() => {
     if (!currentUser) return;
 
@@ -205,7 +208,6 @@ const LogBook = () => {
       newErrors.from = "Starting location is required";
     if (!formData.to?.trim()) newErrors.to = "Destination is required";
 
-    // Before meter reading validation
     if (!formData.beforeMeterReading) {
       newErrors.beforeMeterReading = "Before reading is required";
     } else if (
@@ -215,7 +217,6 @@ const LogBook = () => {
       newErrors.beforeMeterReading = "Enter a valid number";
     }
 
-    // After meter reading validation
     if (!formData.afterMeterReading) {
       newErrors.afterMeterReading = "After reading is required";
     } else if (
@@ -225,7 +226,6 @@ const LogBook = () => {
       newErrors.afterMeterReading = "Enter a valid number";
     }
 
-    // Check after > before
     const before = parseFloat(formData.beforeMeterReading);
     const after = parseFloat(formData.afterMeterReading);
     if (!isNaN(before) && !isNaN(after) && after <= before) {
@@ -381,17 +381,28 @@ const LogBook = () => {
     }
   };
 
-  const handleDeleteLog = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this log?")) return;
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedLog) return;
     try {
       const db = getDatabase();
-      await remove(dbRef(db, `logbook/${currentUser.uid}/${id}`));
+      await remove(dbRef(db, `logbook/${currentUser.uid}/${selectedLog.id}`));
       showToast("Log deleted successfully!", "success");
+      setShowDeleteConfirm(false);
       setShowDetailModal(false);
+      setSelectedLog(null);
       resetForm();
     } catch (err) {
       console.error("Error deleting log:", err);
       showToast("Failed to delete log", "error");
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -428,9 +439,59 @@ const LogBook = () => {
     setShowAddModal(true);
   };
 
-  // --- PRINT HTML (Hidden container for printing) ---
+  // --- PRINT FUNCTION ---
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // --- PDF DOWNLOAD FUNCTION ---
+  const downloadPDF = async () => {
+    try {
+      showToast("Preparing PDF...", "success");
+
+      setShowPdfPreview(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const element = printRef.current;
+      if (!element) {
+        showToast("Content not found", "error");
+        setShowPdfPreview(false);
+        return;
+      }
+
+      showToast("Generating PDF...", "success");
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("l", "mm", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+      const now = new Date();
+      const filename = `LogBook-${now.getMonth() + 1}-${now.getFullYear()}.pdf`;
+      pdf.save(filename);
+
+      setShowPdfPreview(false);
+      showToast("PDF downloaded successfully!", "success");
+    } catch (error) {
+      console.error("PDF error:", error);
+      setShowPdfPreview(false);
+      showToast("PDF generation failed", "error");
+    }
+  };
+
+  // --- PRINT CONTENT COMPONENT ---
   const PrintContent = () => (
-    <div ref={printRef} style={{ display: "none" }}>
+    <div className="print-only">
       <div className="print-container">
         <h1 className="print-title">
           सरकारी मोटार वाहनांकरिता लॉग बुकचा नमुना
@@ -463,7 +524,7 @@ const LogBook = () => {
                 प्रवासापूर्वी व नंतरचे मिटरवरील पाठ्यांक
               </th>
               <th className="w-km" rowSpan="2">
-                किती किलोमीटर
+                कि.मी
               </th>
               <th className="w-purpose" rowSpan="2">
                 प्रवासाचा हेतू
@@ -498,7 +559,7 @@ const LogBook = () => {
                 </td>
                 <td className="td-right">{log.afterMeterReading || ""}</td>
                 <td className="td-center">
-                  <strong>{log.kilometers || ""}</strong>
+                  <strong>{Math.round(parseFloat(log.kilometers) || 0)}</strong>
                 </td>
                 <td>{log.purpose || ""}</td>
                 <td>{log.usedBy || ""}</td>
@@ -523,81 +584,16 @@ const LogBook = () => {
     </div>
   );
 
-  // --- Print using window.print() on current page ---
-  const handlePrint = () => {
-    // Temporarily show print content
-    const printElement = printRef.current;
-    if (!printElement) return;
-
-    printElement.style.display = "block";
-
-    // Hide main content
-    const mainContent = document.querySelector(".logbook-container");
-    const originalDisplay = mainContent.style.display;
-    mainContent.style.display = "none";
-
-    // Trigger print
-    window.print();
-
-    // Restore after print
-    setTimeout(() => {
-      printElement.style.display = "none";
-      mainContent.style.display = originalDisplay;
-    }, 100);
-  };
-
-  // --- Download PDF ---
-  const downloadPDF = async () => {
-    try {
-      showToast("Generating PDF...", "success");
-
-      const printElement = printRef.current;
-      if (!printElement) return;
-
-      // Temporarily show for rendering
-      printElement.style.display = "block";
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const canvas = await html2canvas(printElement, {
-        backgroundColor: "#ffffff",
-        scale: 2.5,
-        useCORS: true,
-        logging: false,
-      });
-
-      printElement.style.display = "none";
-
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pdf = new jsPDF("l", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight, "", "FAST");
-
-      const now = new Date();
-      const filename = `Vehicle-LogBook-${String(now.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}-${now.getFullYear()}.pdf`;
-      pdf.save(filename);
-
-      showToast("PDF downloaded successfully!", "success");
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      showToast("Failed to generate PDF", "error");
-    }
-  };
-
   return (
     <>
-      {/* Toast */}
+      {/* Toast - TOP RIGHT */}
       <AnimatePresence>
         {toast.show && (
           <motion.div
             className={`toast toast-${toast.type}`}
-            initial={{ opacity: 0, y: -50, x: "-50%" }}
-            animate={{ opacity: 1, y: 0, x: "-50%" }}
-            exit={{ opacity: 0, y: -50, x: "-50%" }}
+            initial={{ opacity: 0, y: -50, x: 100 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -50, x: 100 }}
           >
             {toast.type === "success" ? (
               <CheckCircle size={20} />
@@ -609,10 +605,115 @@ const LogBook = () => {
         )}
       </AnimatePresence>
 
-      {/* Hidden Print Content */}
+      {/* Print Content - Hidden on screen, visible when printing */}
       <PrintContent />
 
-      {/* Main */}
+      {/* PDF Preview Modal (Visible during PDF capture) */}
+      <AnimatePresence>
+        {showPdfPreview && (
+          <div className="pdf-preview-modal">
+            <div className="pdf-preview-content" ref={printRef}>
+              <div className="print-container">
+                <h1 className="print-title">
+                  सरकारी मोटार वाहनांकरिता लॉग बुकचा नमुना
+                </h1>
+                <table className="print-table">
+                  <thead>
+                    <tr>
+                      <th className="w-idx" rowSpan="2">
+                        क्र.
+                      </th>
+                      <th className="w-date" rowSpan="2">
+                        तारीख
+                      </th>
+                      <th className="w-supply" colSpan="2">
+                        पुरवठा
+                      </th>
+                      <th className="w-dep" rowSpan="2">
+                        गाडी नेण्याची वेळ
+                      </th>
+                      <th className="w-arr" rowSpan="2">
+                        गाडी आल्याची वेळ
+                      </th>
+                      <th className="w-from" rowSpan="2">
+                        कोठून
+                      </th>
+                      <th className="w-to" rowSpan="2">
+                        कोठे
+                      </th>
+                      <th className="w-meter" colSpan="2">
+                        प्रवासापूर्वी व नंतरचे मिटरवरील पाठ्यांक
+                      </th>
+                      <th className="w-km" rowSpan="2">
+                        कि.मी
+                      </th>
+                      <th className="w-purpose" rowSpan="2">
+                        प्रवासाचा हेतू
+                      </th>
+                      <th className="w-user" rowSpan="2">
+                        गाडी कोणी वापरली
+                      </th>
+                      <th className="w-remark" rowSpan="2">
+                        शेरा
+                      </th>
+                    </tr>
+                    <tr>
+                      <th className="w-supply-child">जळण</th>
+                      <th className="w-supply-child">तेल</th>
+                      <th className="w-meter-child">पूर्वी</th>
+                      <th className="w-meter-child">नंतर</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.map((log, index) => (
+                      <tr key={log.id}>
+                        <td className="td-center">{index + 1}</td>
+                        <td>
+                          {new Date(log.date).toLocaleDateString("en-GB")}
+                        </td>
+                        <td className="td-center">{log.fuel || "-"}</td>
+                        <td className="td-center">{log.oil || "-"}</td>
+                        <td>{log.departureTime || ""}</td>
+                        <td>{log.arrivalTime || ""}</td>
+                        <td>{log.from || ""}</td>
+                        <td>{log.to || ""}</td>
+                        <td className="td-right">
+                          {log.beforeMeterReading || log.meterReading || ""}
+                        </td>
+                        <td className="td-right">
+                          {log.afterMeterReading || ""}
+                        </td>
+                        <td className="td-center">
+                          <strong>
+                            {Math.round(parseFloat(log.kilometers) || 0)}
+                          </strong>
+                        </td>
+                        <td>{log.purpose || ""}</td>
+                        <td>{log.usedBy || ""}</td>
+                        <td></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="print-footer">
+                  <p>
+                    <strong>Generated on:</strong>{" "}
+                    {new Date().toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Container */}
       <motion.div
         className="logbook-container"
         initial={{ opacity: 0, y: 20 }}
@@ -790,7 +891,86 @@ const LogBook = () => {
         )}
       </motion.div>
 
-      {/* Add/Edit Log Modal */}
+      {/* ========== DELETE CONFIRMATION MODAL ========== */}
+      <AnimatePresence>
+        {showDeleteConfirm && selectedLog && (
+          <motion.div
+            className="delete-confirm-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={cancelDelete}
+          >
+            <motion.div
+              className="delete-confirm-modal"
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="delete-icon-container">
+                <motion.div
+                  className="delete-icon-circle"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                >
+                  <AlertTriangle size={48} />
+                </motion.div>
+              </div>
+
+              <div className="delete-content">
+                <h3>Delete Log Entry?</h3>
+                <p>
+                  Are you sure you want to delete this log entry? This action
+                  cannot be undone.
+                </p>
+
+                <div className="delete-entry-summary">
+                  <div className="summary-item">
+                    <span className="summary-label">Date:</span>
+                    <span className="summary-value">
+                      {new Date(selectedLog.date).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Route:</span>
+                    <span className="summary-value">
+                      {selectedLog.from} → {selectedLog.to}
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Distance:</span>
+                    <span className="summary-value">
+                      {selectedLog.kilometers} km
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Driver:</span>
+                    <span className="summary-value">{selectedLog.usedBy}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="delete-actions">
+                <button onClick={cancelDelete} className="btn-cancel-delete">
+                  Cancel
+                </button>
+                <button onClick={confirmDelete} className="btn-confirm-delete">
+                  <Trash2 size={18} />
+                  Yes, Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========== ADD/EDIT LOG MODAL ========== */}
       <AnimatePresence>
         {showAddModal && (
           <motion.div
@@ -830,7 +1010,6 @@ const LogBook = () => {
                 className="compact-form"
               >
                 <div className="form-grid">
-                  {/* Date */}
                   <div className="form-group">
                     <label>
                       Date <span className="required">*</span>
@@ -848,7 +1027,6 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Fuel */}
                   <div className="form-group">
                     <label>Fuel (Liters)</label>
                     <input
@@ -865,7 +1043,6 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Oil */}
                   <div className="form-group">
                     <label>Oil (Liters)</label>
                     <input
@@ -882,16 +1059,16 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Departure (12h) */}
                   <div className="form-group">
                     <label>
-                      गाडी नेण्याची वेळ <span className="required">*</span>
+                      Departure Time <span className="required">*</span>
                     </label>
                     <div className="time-12h">
                       <select
-                        name="depHour"
                         value={formData.depHour}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          setFormData({ ...formData, depHour: e.target.value })
+                        }
                         className={errors.departure ? "error" : ""}
                       >
                         {HOURS_12.map((h) => (
@@ -902,9 +1079,13 @@ const LogBook = () => {
                       </select>
                       <span className="sep">:</span>
                       <select
-                        name="depMinute"
                         value={formData.depMinute}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            depMinute: e.target.value,
+                          })
+                        }
                         className={errors.departure ? "error" : ""}
                       >
                         {MINUTES.map((m) => (
@@ -914,9 +1095,13 @@ const LogBook = () => {
                         ))}
                       </select>
                       <select
-                        name="depPeriod"
                         value={formData.depPeriod}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            depPeriod: e.target.value,
+                          })
+                        }
                         className={errors.departure ? "error" : ""}
                       >
                         {PERIODS.map((p) => (
@@ -931,16 +1116,16 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Arrival (12h) */}
                   <div className="form-group">
                     <label>
-                      गाडी आल्याची वेळ <span className="required">*</span>
+                      Arrival Time <span className="required">*</span>
                     </label>
                     <div className="time-12h">
                       <select
-                        name="arrHour"
                         value={formData.arrHour}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          setFormData({ ...formData, arrHour: e.target.value })
+                        }
                         className={errors.arrival ? "error" : ""}
                       >
                         {HOURS_12.map((h) => (
@@ -951,9 +1136,13 @@ const LogBook = () => {
                       </select>
                       <span className="sep">:</span>
                       <select
-                        name="arrMinute"
                         value={formData.arrMinute}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            arrMinute: e.target.value,
+                          })
+                        }
                         className={errors.arrival ? "error" : ""}
                       >
                         {MINUTES.map((m) => (
@@ -963,9 +1152,13 @@ const LogBook = () => {
                         ))}
                       </select>
                       <select
-                        name="arrPeriod"
                         value={formData.arrPeriod}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            arrPeriod: e.target.value,
+                          })
+                        }
                         className={errors.arrival ? "error" : ""}
                       >
                         {PERIODS.map((p) => (
@@ -980,7 +1173,6 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* From */}
                   <div className="form-group">
                     <label>
                       From <span className="required">*</span>
@@ -998,7 +1190,6 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* To */}
                   <div className="form-group">
                     <label>
                       To <span className="required">*</span>
@@ -1016,11 +1207,9 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Before Meter Reading */}
                   <div className="form-group">
                     <label>
-                      Before Travelling Reading{" "}
-                      <span className="required">*</span>
+                      Before Reading <span className="required">*</span>
                     </label>
                     <input
                       name="beforeMeterReading"
@@ -1037,11 +1226,9 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* After Meter Reading */}
                   <div className="form-group">
                     <label>
-                      After Travelling Reading{" "}
-                      <span className="required">*</span>
+                      After Reading <span className="required">*</span>
                     </label>
                     <input
                       name="afterMeterReading"
@@ -1058,7 +1245,6 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Km (Auto-calculated) */}
                   <div className="form-group">
                     <label>
                       Kilometers <span className="required">*</span>
@@ -1082,7 +1268,6 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Purpose */}
                   <div className="form-group full-width">
                     <label>
                       Purpose <span className="required">*</span>
@@ -1100,7 +1285,6 @@ const LogBook = () => {
                     )}
                   </div>
 
-                  {/* Used By */}
                   <div className="form-group full-width">
                     <label>
                       Driver Name <span className="required">*</span>
@@ -1141,7 +1325,7 @@ const LogBook = () => {
         )}
       </AnimatePresence>
 
-      {/* Detail View Modal */}
+      {/* ========== DETAIL VIEW MODAL ========== */}
       <AnimatePresence>
         {showDetailModal && selectedLog && (
           <motion.div
@@ -1265,7 +1449,7 @@ const LogBook = () => {
               <div className="detail-modal-footer">
                 <button
                   className="btn-delete-detail"
-                  onClick={() => handleDeleteLog(selectedLog.id)}
+                  onClick={handleDeleteClick}
                 >
                   <Trash2 size={18} />
                   Delete
@@ -1280,13 +1464,18 @@ const LogBook = () => {
         )}
       </AnimatePresence>
 
+      {/* ========== COMPLETE STYLES ========== */}
       <style>{`
-        /* Toast */
+        /* ===== GLOBAL RESETS ===== */
+        * {
+          box-sizing: border-box;
+        }
+
+        /* ===== TOAST - TOP RIGHT ===== */
         .toast {
           position: fixed;
           top: 20px;
-          left: 50%;
-          transform: translateX(-50%);
+          right: 20px;
           display: flex;
           align-items: center;
           gap: 0.75rem;
@@ -1298,131 +1487,61 @@ const LogBook = () => {
           min-width: 300px;
           backdrop-filter: blur(10px);
         }
-        .toast-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
-        .toast-error { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
-
-        /* Main Container */
-        .logbook-container { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
-
-        .logbook-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-        .logbook-header-left h2 {
-          display: flex; align-items: center; gap: 0.75rem; margin: 0 0 0.5rem 0;
-          font-size: 1.75rem; background: linear-gradient(135deg, #3b82f6, #2563eb);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        .toast-success {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
         }
-        .logbook-header-left p { margin: 0; color: #64748b; font-size: 0.95rem; }
-        .logbook-header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-
-        .btn-action {
-          display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; border: none; border-radius: 10px;
-          font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease;
+        .toast-error {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          color: white;
         }
-        .btn-print { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
-        .btn-print:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4); }
-        .btn-download { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
-        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
-        .btn-add-log {
-          display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+
+        /* ===== PRINT CONTENT - HIDDEN ON SCREEN ===== */
+        .print-only {
+          display: none;
         }
-        .btn-add-log:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4); }
 
-        .logbook-loading, .logbook-empty {
-          display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; color: #64748b; text-align: center;
-        }
-        .spinner-logbook { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .logbook-empty h3 { margin: 1rem 0 0.5rem 0; color: #64748b; font-size: 1.25rem; }
-        .btn-empty-log { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
-
-        /* Table (in-app) */
-        .table-wrapper { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); overflow-x: auto; border: 1px solid #e2e8f0; }
-        .log-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .log-table thead { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-        .log-table th { padding: 1rem 0.75rem; text-align: left; font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
-        .log-table tbody tr { border-bottom: 1px solid #e2e8f0; transition: all 0.2s ease; }
-        .log-table tbody tr.clickable-row { cursor: pointer; }
-        .log-table tbody tr.clickable-row:hover { background: #f1f5f9; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transform: scale(1.005); }
-        .log-table td { padding: 1rem 0.75rem; color: #475569; }
-
-        .td-date { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #1e293b; white-space: nowrap; }
-        .td-route { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
-        .route-item { display: flex; align-items: center; gap: 0.35rem; }
-        .icon-from { color: #10b981; }
-        .icon-to { color: #ef4444; }
-        .route-arrow { color: #94a3b8; font-weight: bold; }
-
-        .td-time { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; }
-        .td-time > div { display: flex; align-items: center; gap: 0.35rem; }
-        .time-arrival { color: #10b981; font-weight: 600; }
-
-        .td-distance { display: flex; flex-direction: column; gap: 0.25rem; }
-        .td-distance strong { color: #3b82f6; font-size: 1rem; }
-        .td-distance small { color: #94a3b8; font-size: 0.75rem; }
-
-        .td-supply { display: flex; flex-direction: column; gap: 0.25rem; }
-        .supply-badge { display: flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; width: fit-content; }
-        .supply-badge.fuel { background: #dbeafe; color: #1e40af; }
-        .supply-badge.oil { background: #fef3c7; color: #92400e; }
-
-        .td-purpose { max-width: 200px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 0.85rem; line-height: 1.4; }
-        .td-user { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; font-size: 0.85rem; }
-
-        /* Modals */
-        .logbook-modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 5000; padding: 1rem; overflow-y: auto; }
-        .logbook-modal-content { background: white; border-radius: 16px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); margin: auto; }
-        .compact-modal { max-width: 800px; }
-        .detail-modal { max-width: 550px; }
-
-        .logbook-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 2px solid #e2e8f0; background: linear-gradient(135deg, #eff6ff, #dbeafe); position: sticky; top: 0; z-index: 10; }
-        .logbook-modal-header h3 { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
-        .logbook-modal-header button { background: #f1f5f9; border: none; border-radius: 8px; padding: 0.5rem; cursor: pointer; color: #64748b; transition: all 0.2s ease; }
-        .logbook-modal-header button:hover { background: #e2e8f0; color: #334155; }
-
-        .compact-form { padding: 1.5rem; }
-        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group.full-width { grid-column: 1 / -1; }
-        .form-group label { margin-bottom: 0.4rem; font-weight: 600; color: #1e293b; font-size: 0.85rem; }
-        .required { color: #dc2626; }
-
-        .form-group input, .form-group select, .form-group textarea {
-          width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s ease; font-family: inherit;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-          outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-        .form-group input.error, .form-group select.error, .form-group textarea.error { border-color: #dc2626; }
-        .error-text { color: #dc2626; font-size: 0.75rem; margin-top: 0.25rem; }
-        .form-group textarea { resize: vertical; min-height: 60px; }
-
-        .time-12h { display: grid; grid-template-columns: 1fr auto 1fr 1fr; gap: 0.4rem; align-items: center; width:220px; }
-        .time-12h .sep { text-align: center; font-weight: 700; color: #64748b; }
-
-        .compact-modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.25rem 1.5rem; border-top: 2px solid #e2e8f0; background: #f8fafc; position: sticky; bottom: 0; }
-        .btn-cancel, .btn-save { padding: 0.65rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; font-size: 0.9rem; }
-        .btn-cancel { background: #f1f5f9; color: #64748b; }
-        .btn-cancel:hover { background: #e2e8f0; }
-        .btn-save { display: flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-        .btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
-
-        .detail-content { padding: 1.5rem; }
-        .detail-row { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 0.75rem; border-left: 3px solid #3b82f6; }
-        .detail-label { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #64748b; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .detail-value { color: #1e293b; font-size: 1rem; font-weight: 500; padding-left: 1.5rem; }
-        .detail-modal-footer { display: flex; justify-content: space-between; gap: 0.75rem; padding: 1.25rem 1.5rem; border-top: 2px solid #e2e8f0; background: #f8fafc; }
-        .btn-delete-detail, .btn-edit-detail { display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; flex: 1; justify-content: center; font-size: 0.9rem; }
-        .btn-delete-detail { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
-        .btn-delete-detail:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
-        .btn-edit-detail { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
-        .btn-edit-detail:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); }
-
-        /* Print Styles */
         @media print {
-          body * { visibility: hidden; }
-          .print-container, .print-container * { visibility: visible; }
-          .print-container { position: absolute; left: 0; top: 0; width: 100%; }
+          body * {
+            visibility: hidden;
+          }
+
+          .print-only,
+          .print-only * {
+            visibility: visible;
+          }
+
+          .print-only {
+            display: block;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
+        }
+
+        /* ===== PDF PREVIEW MODAL ===== */
+        .pdf-preview-modal {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.9);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+          padding: 20px;
+        }
+
+        .pdf-preview-content {
+          background: white;
+          width: 297mm;
+          min-height: 210mm;
+          box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
         }
 
         .print-container {
@@ -1434,11 +1553,11 @@ const LogBook = () => {
 
         .print-title {
           text-align: center;
-          margin: 0 0 16px 0;
-          font-size: 24px;
+          margin: 0 0 15px 0;
+          font-size: 22px;
           font-weight: 700;
           color: #1e293b;
-          border-bottom: 4px solid #3b82f6;
+          border-bottom: 3px solid #3b82f6;
           padding-bottom: 10px;
         }
 
@@ -1450,23 +1569,25 @@ const LogBook = () => {
         }
 
         .print-table thead th {
-          color: #000000ff;
+          color: #000;
           border: 1px solid #1d4ed8;
           text-align: center;
           font-weight: 700;
-          padding: 8px 6px;
-          line-height: 1.25;
+          padding: 8px 4px;
+          line-height: 1.3;
           vertical-align: middle;
           word-wrap: break-word;
           white-space: normal;
+          background: #dbeafe;
         }
 
         .print-table tbody td {
           border: 1px solid #333;
-          padding: 8px 6px;
+          padding: 8px 4px;
           vertical-align: top;
           word-wrap: break-word;
           white-space: normal;
+          line-height: 1.4;
         }
 
         .print-table tbody tr:nth-child(even) {
@@ -1474,25 +1595,25 @@ const LogBook = () => {
         }
 
         .w-idx { width: 3%; }
-        .w-date { width: 9%; }
-        .w-supply { width: 14%; }
-        .w-supply-child { width: 7%; }
-        .w-dep { width: 10%; }
-        .w-arr { width: 10%; }
-        .w-from { width: 10%; }
-        .w-to { width: 10%; }
+        .w-date { width: 7%; }
+        .w-supply { width: 10%; }
+        .w-supply-child { width: 5%; }
+        .w-dep { width: 8%; }
+        .w-arr { width: 8%; }
+        .w-from { width: 11%; }
+        .w-to { width: 11%; }
         .w-meter { width: 14%; }
         .w-meter-child { width: 7%; }
-        .w-km { width: 6%; }
-        .w-purpose { width: 11%; }
-        .w-user { width: 10%; }
-        .w-remark { width: 10%; }
+        .w-km { width: 5%; }
+        .w-purpose { width: 13%; }
+        .w-user { width: 9%; }
+        .w-remark { width: 8%; }
 
         .td-center { text-align: center; }
         .td-right { text-align: right; }
 
         .print-footer {
-          margin-top: 16px;
+          margin-top: 15px;
           text-align: center;
           font-size: 10px;
           color: #64748b;
@@ -1500,19 +1621,861 @@ const LogBook = () => {
           padding-top: 8px;
         }
 
-        @media (max-width: 968px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) {
-          .logbook-header { flex-direction: column; align-items: stretch; }
-          .logbook-header-actions { width: 100%; }
-          .btn-action, .btn-add-log { flex: 1; justify-content: center; }
-          .table-wrapper { overflow-x: scroll; }
-          .log-table { min-width: 900px; }
-          .form-grid { grid-template-columns: 1fr; }
-          .toast { min-width: 250px; font-size: 0.9rem; }
+        /* ===== MAIN CONTAINER ===== */
+        .logbook-container {
+          padding: 1.5rem;
+          max-width: 1400px;
+          margin: 0 auto;
+          transition: all 0.3s ease;
         }
+
+        /* Sidebar state adjustments */
+        .main-content:not(.sidebar-collapsed) .logbook-container {
+          max-width: calc(100vw - 280px - 4rem);
+        }
+
+        .main-content.sidebar-collapsed .logbook-container {
+          max-width: calc(100vw - 80px - 4rem);
+        }
+
+        .logbook-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .logbook-header-left h2 {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin: 0 0 0.5rem 0;
+          font-size: 1.75rem;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .logbook-header-left p {
+          margin: 0;
+          color: #64748b;
+          font-size: 0.95rem;
+        }
+
+        .logbook-header-actions {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .btn-action {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.65rem 1.25rem;
+          border: none;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .btn-print {
+          background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          color: white;
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-print:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-download {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-download:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-add-log {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-add-log:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        /* ===== LOADING & EMPTY STATES ===== */
+        .logbook-loading,
+        .logbook-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 4rem 2rem;
+          color: #64748b;
+          text-align: center;
+        }
+
+        .spinner-logbook {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #e2e8f0;
+          border-top-color: #3b82f6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .logbook-empty h3 {
+          margin: 1rem 0 0.5rem 0;
+          color: #64748b;
+          font-size: 1.25rem;
+        }
+
+        .btn-empty-log {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 1.5rem;
+          padding: 0.75rem 1.5rem;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        /* ===== TABLE ===== */
+        .table-wrapper {
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          overflow-x: auto;
+          border: 1px solid #e2e8f0;
+        }
+
+        .log-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+        }
+
+        .log-table thead {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+        }
+
+        .log-table th {
+          padding: 1rem 0.75rem;
+          text-align: left;
+          font-weight: 700;
+          font-size: 0.85rem;
+          white-space: nowrap;
+        }
+
+        .log-table tbody tr {
+          border-bottom: 1px solid #e2e8f0;
+          transition: all 0.2s ease;
+        }
+
+        .log-table tbody tr.clickable-row {
+          cursor: pointer;
+        }
+
+        .log-table tbody tr.clickable-row:hover {
+          background: #f1f5f9;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          transform: scale(1.005);
+        }
+
+        .log-table td {
+          padding: 1rem 0.75rem;
+          color: #475569;
+        }
+
+        .td-date {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-weight: 600;
+          color: #1e293b;
+          white-space: nowrap;
+        }
+
+        .td-route {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.85rem;
+        }
+
+        .route-item {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+
+        .icon-from {
+          color: #10b981;
+        }
+
+        .icon-to {
+          color: #ef4444;
+        }
+
+        .route-arrow {
+          color: #94a3b8;
+          font-weight: bold;
+        }
+
+        .td-time {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          font-size: 0.85rem;
+        }
+
+        .td-time > div {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+
+        .time-arrival {
+          color: #10b981;
+          font-weight: 600;
+        }
+
+        .td-distance {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .td-distance strong {
+          color: #3b82f6;
+          font-size: 1rem;
+        }
+
+        .td-distance small {
+          color: #94a3b8;
+          font-size: 0.75rem;
+        }
+
+        .td-supply {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .supply-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.2rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          width: fit-content;
+        }
+
+        .supply-badge.fuel {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+
+        .supply-badge.oil {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .td-purpose {
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          font-size: 0.85rem;
+          line-height: 1.4;
+        }
+
+        .td-user {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-weight: 500;
+          font-size: 0.85rem;
+        }
+
+        /* ===== DELETE MODAL ===== */
+        .delete-confirm-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 7000;
+          padding: 1rem;
+        }
+
+        .delete-confirm-modal {
+          background: #fff;
+          border-radius: 20px;
+          max-width: 480px;
+          width: 100%;
+          box-shadow: 0 25px 70px rgba(248, 113, 113, 0.3);
+          overflow: hidden;
+        }
+
+        .delete-icon-container {
+          display: flex;
+          justify-content: center;
+          padding: 2rem 1.5rem 1rem;
+          background: linear-gradient(135deg, #fee2e2, #fecaca);
+        }
+
+        .delete-icon-circle {
+          width: 96px;
+          height: 96px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #fecaca, #fca5a5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #dc2626;
+          box-shadow: 0 8px 24px rgba(248, 113, 113, 0.25);
+        }
+
+        .delete-content {
+          padding: 1.5rem 1.75rem;
+          text-align: center;
+        }
+
+        .delete-content h3 {
+          margin: 0 0 0.75rem;
+          font-size: 1.5rem;
+          color: #dc2626;
+          font-weight: 700;
+        }
+
+        .delete-content p {
+          margin: 0 0 1.25rem;
+          color: #64748b;
+          font-size: 0.95rem;
+          line-height: 1.6;
+        }
+
+        .delete-entry-summary {
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 1rem;
+          text-align: left;
+        }
+
+        .summary-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5rem 0;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .summary-item:last-child {
+          border-bottom: none;
+        }
+
+        .summary-label {
+          font-weight: 600;
+          color: #64748b;
+          font-size: 0.88rem;
+        }
+
+        .summary-value {
+          font-weight: 600;
+          color: #1e293b;
+          font-size: 0.92rem;
+        }
+
+        .delete-actions {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1.25rem 1.75rem;
+          background: #f8fafc;
+          border-top: 2px solid #e2e8f0;
+        }
+
+        .btn-cancel-delete {
+          flex: 1;
+          padding: 0.85rem 1.25rem;
+          background: #fff;
+          border: 2px solid #cbd5e1;
+          border-radius: 12px;
+          color: #64748b;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .btn-cancel-delete:hover {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+          color: #475569;
+          transform: translateY(-1px);
+        }
+
+        .btn-confirm-delete {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.85rem 1.25rem;
+          background: linear-gradient(135deg, #fca5a5, #f87171);
+          border: none;
+          border-radius: 12px;
+          color: white;
+          font-weight: 700;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
+        }
+
+        .btn-confirm-delete:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(248, 113, 113, 0.4);
+        }
+
+        /* ===== MODAL BACKDROP ===== */
+        .logbook-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 6000;
+          padding: 1rem;
+          overflow-y: auto;
+        }
+
+        /* ===== MODAL CONTENT ===== */
+        .logbook-modal-content {
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+          width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        .compact-modal {
+          max-width: 800px;
+        }
+
+        .detail-modal {
+          max-width: 600px;
+        }
+
+        .logbook-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1.25rem 1.5rem;
+          border-bottom: 2px solid #e2e8f0;
+          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        }
+
+        .logbook-modal-header h3 {
+          margin: 0;
+          font-size: 1.25rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #1e293b;
+        }
+
+        .logbook-modal-header button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #64748b;
+          padding: 0.5rem;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+        }
+
+        .logbook-modal-header button:hover {
+          background: #e2e8f0;
+          color: #1e293b;
+        }
+
+        /* ===== FORM ===== */
+        .compact-form {
+          padding: 1.5rem;
+        }
+
+        .form-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 1.25rem;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .form-group.full-width {
+          grid-column: 1 / -1;
+        }
+
+        .form-group label {
+          font-weight: 600;
+          color: #1e293b;
+          font-size: 0.9rem;
+        }
+
+        .required {
+          color: #ef4444;
+        }
+
+        .form-group input,
+        .form-group select {
+          padding: 0.75rem;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          transition: all 0.2s ease;
+          font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group input.error,
+        .form-group select.error {
+          border-color: #ef4444;
+        }
+
+        .error-text {
+          color: #ef4444;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+
+        .time-12h {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .time-12h select {
+          flex: 1;
+          padding: 0.75rem;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          background: white;
+          cursor: pointer;
+        }
+
+        .time-12h .sep {
+          font-weight: bold;
+          color: #64748b;
+          font-size: 1.2rem;
+        }
+
+        /* ===== MODAL FOOTER ===== */
+        .compact-modal-footer {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1.25rem 1.5rem;
+          background: #f8fafc;
+          border-top: 2px solid #e2e8f0;
+        }
+
+        .btn-cancel,
+        .btn-save {
+          flex: 1;
+          padding: 0.85rem 1.25rem;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .btn-cancel {
+          background: white;
+          border: 2px solid #cbd5e1;
+          color: #64748b;
+        }
+
+        .btn-cancel:hover {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+          color: #475569;
+        }
+
+        .btn-save {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          border: none;
+          color: white;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-save:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        /* ===== DETAIL MODAL ===== */
+        .detail-content {
+          padding: 1.5rem;
+        }
+
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding: 1rem 0;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .detail-row:last-child {
+          border-bottom: none;
+        }
+
+        .detail-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-weight: 600;
+          color: #64748b;
+          font-size: 0.9rem;
+          flex: 0 0 40%;
+        }
+
+        .detail-value {
+          font-weight: 500;
+          color: #1e293b;
+          font-size: 0.95rem;
+          text-align: right;
+          flex: 1;
+        }
+
+        .detail-modal-footer {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1.25rem 1.5rem;
+          background: #f8fafc;
+          border-top: 2px solid #e2e8f0;
+        }
+
+        .btn-delete-detail,
+        .btn-edit-detail {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.85rem 1.25rem;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: none;
+        }
+
+        .btn-delete-detail {
+          background: linear-gradient(135deg, #fca5a5, #f87171);
+          color: white;
+          box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
+        }
+
+        .btn-delete-detail:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(248, 113, 113, 0.4);
+        }
+
+        .btn-edit-detail {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-edit-detail:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        
+        /* Desktop & Large Tablet (1024px+) - Sidebar-aware */
+        @media (min-width: 1024px) {
+          /* Adjust for sidebar expanded state */
+          .main-content:not(.sidebar-collapsed) .logbook-container {
+            max-width: calc(100vw - 280px - 4rem);
+          }
+
+          /* Adjust for sidebar collapsed state */
+          .main-content.sidebar-collapsed .logbook-container {
+            max-width: calc(100vw - 80px - 4rem);
+          }
+        }
+
+        /* Tablet (768px - 1023px) - Sidebar-aware on larger tablets */
+        @media (max-width: 1023px) and (min-width: 768px) {
+          .main-content:not(.sidebar-collapsed) .logbook-container {
+            max-width: calc(100vw - 280px - 3rem);
+          }
+
+          .main-content.sidebar-collapsed .logbook-container {
+            max-width: calc(100vw - 80px - 3rem);
+          }
+        }
+
+        /* Mobile & Small Tablet (max-width: 767px) - No sidebar margin */
+        @media (max-width: 768px) {
+          /* Reset container for mobile - ignore sidebar */
+          .main-content .logbook-container,
+          .main-content.sidebar-collapsed .logbook-container,
+          .main-content:not(.sidebar-collapsed) .logbook-container {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+          }
+
+          .logbook-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .logbook-header-actions {
+            width: 100%;
+          }
+
+          .btn-action,
+          .btn-add-log {
+            flex: 1;
+            justify-content: center;
+          }
+
+          .table-wrapper {
+            overflow-x: scroll;
+          }
+
+          .log-table {
+            min-width: 900px;
+          }
+
+          .toast {
+            min-width: 250px;
+            font-size: 0.9rem;
+            right: 10px;
+          }
+
+          .form-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .compact-modal,
+          .detail-modal {
+            max-width: 95%;
+          }
+
+          .detail-row {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+
+          .detail-label {
+            flex: 1;
+          }
+
+          .detail-value {
+            text-align: left;
+          }
+        }
+
         @media (max-width: 480px) {
-          .logbook-container { padding: 1rem; }
-          .logbook-header-left h2 { font-size: 1.35rem; }
+          .logbook-container {
+            padding: 1rem;
+          }
+
+          .logbook-header-left h2 {
+            font-size: 1.5rem;
+          }
+
+          .btn-action {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+          }
+
+          .btn-action span:not(.sr-only) {
+            display: none;
+          }
+
+          .compact-modal-footer,
+          .detail-modal-footer,
+          .delete-actions {
+            flex-direction: column;
+          }
+
+          .btn-cancel,
+          .btn-save,
+          .btn-delete-detail,
+          .btn-edit-detail,
+          .btn-cancel-delete,
+          .btn-confirm-delete {
+            width: 100%;
+          }
         }
       `}</style>
     </>

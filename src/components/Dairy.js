@@ -26,6 +26,7 @@ import {
   Edit2,
   Edit,
   AlertTriangle,
+  MessageSquare,
 } from "lucide-react";
 
 // PDF generation libraries
@@ -66,7 +67,7 @@ const Dairy = ({ showToast }) => {
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const printRef = useRef();
 
-  // Form data for new/edit entry with DEFAULT TIME VALUES
+  // Form data for new/edit entry with DEFAULT TIME VALUES + REMARK
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     travelFrom: "",
@@ -79,6 +80,7 @@ const Dairy = ({ showToast }) => {
     timeToPeriod: "PM",
     distance: "",
     vehicle: "",
+    remark: "", // NEW: Remark field
   });
 
   const [errors, setErrors] = useState({});
@@ -293,6 +295,8 @@ const Dairy = ({ showToast }) => {
       newErrors.vehicle = "Invalid format. Use: MH10GF3456";
     }
 
+    // Remark is optional, no validation needed
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -367,7 +371,7 @@ const Dairy = ({ showToast }) => {
     const timeFrom = parseStoredTime(selectedEntry.timeFrom);
     const timeTo = parseStoredTime(selectedEntry.timeTo);
 
-    // Set form data with existing entry values
+    // Set form data with existing entry values (including remark)
     setFormData({
       date: selectedEntry.date,
       travelFrom: selectedEntry.travelFrom,
@@ -380,6 +384,7 @@ const Dairy = ({ showToast }) => {
       timeToPeriod: timeTo.period,
       distance: selectedEntry.distance,
       vehicle: selectedEntry.vehicle,
+      remark: selectedEntry.remark || "", // Include remark
     });
 
     // Store the ID for update operation
@@ -455,6 +460,7 @@ const Dairy = ({ showToast }) => {
         timeTo,
         distance: formData.distance,
         vehicle: formData.vehicle,
+        remark: formData.remark || "", // Save remark
         createdAt: new Date().toISOString(),
       });
 
@@ -506,6 +512,7 @@ const Dairy = ({ showToast }) => {
         timeTo,
         distance: formData.distance,
         vehicle: formData.vehicle,
+        remark: formData.remark || "", // Update remark
         updatedAt: new Date().toISOString(),
       });
 
@@ -535,6 +542,7 @@ const Dairy = ({ showToast }) => {
       timeToPeriod: "PM",
       distance: "",
       vehicle: "",
+      remark: "", // Reset remark
     });
     setErrors({});
   };
@@ -679,6 +687,7 @@ const Dairy = ({ showToast }) => {
                   <th>Duration</th>
                   <th>Distance</th>
                   <th>Vehicle No</th>
+                  <th>Remark</th>
                 </tr>
               </thead>
               <tbody>
@@ -719,6 +728,14 @@ const Dairy = ({ showToast }) => {
                       <td className="td-vehicle">
                         <Car size={14} className="inline-icon" />
                         {entry.vehicle}
+                      </td>
+                      <td className="td-remark">
+                        {entry.remark && (
+                          <>
+                            <MessageSquare size={14} className="inline-icon" />
+                            {entry.remark}
+                          </>
+                        )}
                       </td>
                     </motion.tr>
                   ))}
@@ -789,6 +806,12 @@ const Dairy = ({ showToast }) => {
                   <span className="label">Vehicle No:</span>
                   <span className="value">{selectedEntry.vehicle}</span>
                 </div>
+                {selectedEntry.remark && (
+                  <div className="detail-row">
+                    <span className="label">Remark:</span>
+                    <span className="value">{selectedEntry.remark}</span>
+                  </div>
+                )}
               </div>
 
               <div className="entry-options-actions">
@@ -1137,6 +1160,25 @@ const Dairy = ({ showToast }) => {
                   </div>
                 </div>
 
+                {/* Remark Field */}
+                <div className="form-row">
+                  <div className="form-group full-width">
+                    <label htmlFor="remark">
+                      <MessageSquare size={16} className="inline-icon" />
+                      Remark (Optional)
+                    </label>
+                    <textarea
+                      id="remark"
+                      name="remark"
+                      rows="3"
+                      placeholder="Add any notes or remarks about this travel..."
+                      value={formData.remark}
+                      onChange={handleChange}
+                      className="remark-textarea"
+                    />
+                  </div>
+                </div>
+
                 {/* Form Footer */}
                 <div className="dairy-modal-footer">
                   <button
@@ -1400,6 +1442,25 @@ const Dairy = ({ showToast }) => {
                     {errors.vehicle && (
                       <span className="error-text">{errors.vehicle}</span>
                     )}
+                  </div>
+                </div>
+
+                {/* Remark Field */}
+                <div className="form-row">
+                  <div className="form-group full-width">
+                    <label htmlFor="edit-remark">
+                      <MessageSquare size={16} className="inline-icon" />
+                      Remark (Optional)
+                    </label>
+                    <textarea
+                      id="edit-remark"
+                      name="remark"
+                      rows="3"
+                      placeholder="Add any notes or remarks about this travel..."
+                      value={formData.remark}
+                      onChange={handleChange}
+                      className="remark-textarea"
+                    />
                   </div>
                 </div>
 
@@ -1691,12 +1752,12 @@ const Dairy = ({ showToast }) => {
                     <tr>
                       <th style={{ width: "50px" }}>दिनांक</th>
                       <th style={{ width: "45px" }}>वार</th>
-                      <th style={{ width: "115px" }}>कुठून</th>
-                      <th style={{ width: "115px" }}>कुठे</th>
-                      <th style={{ width: "80px" }}>वाहन</th>
-                      <th style={{ width: "50px" }}>अंतर</th>
+                      <th style={{ width: "115px" }}>पासून</th>
+                      <th style={{ width: "115px" }}>पर्यंत</th>
                       <th style={{ width: "90px" }}>वेळ</th>
-                      <th style={{ width: "90px" }}>शेरा</th>
+                      <th style={{ width: "50px" }}>अंतर</th>
+                      <th style={{ width: "80px" }}>वाहन</th>
+                      <th style={{ width: "120px" }}>शेरा</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1716,12 +1777,12 @@ const Dairy = ({ showToast }) => {
                           <td>{formatDay(row.date)}</td>
                           <td>{row.travelFrom}</td>
                           <td>{row.travelTo}</td>
-                          <td>{row.vehicle}</td>
-                          <td>{row.distance}</td>
                           <td className="time-cell">
                             {row.timeFrom} - {row.timeTo}
                           </td>
-                          <td className="shera-cell"></td>
+                          <td>{row.distance}</td>
+                          <td>{row.vehicle}</td>
+                          <td className="shera-cell">{row.remark || ""}</td>
                         </tr>
                       ))
                     )}
@@ -1769,12 +1830,13 @@ const Dairy = ({ showToast }) => {
                   <div className="sign-name">{reportConfig.designation},</div>
                   {reportConfig.officeName && (
                     <div className="sign-office">
-                      कार्यालयाचे नाव - {reportConfig.officeName}
+                      {reportConfig.officeName}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     </div>
                   )}
                   {reportConfig.officeLocation && (
                     <div className="sign-location">
-                      कार्यालयाचे ठिकाण/गाव - {reportConfig.officeLocation}
+                      {reportConfig.officeLocation}
+                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     </div>
                   )}
                 </div>
@@ -1829,6 +1891,16 @@ const Dairy = ({ showToast }) => {
           padding: 1.25rem;
           max-width: 1300px;
           margin: 0 auto;
+          transition: all 0.3s ease;
+        }
+
+        /* Sidebar state adjustments */
+        .main-content:not(.sidebar-collapsed) .dairy-container {
+          max-width: calc(100vw - 280px - 4rem);
+        }
+
+        .main-content.sidebar-collapsed .dairy-container {
+          max-width: calc(100vw - 80px - 4rem);
         }
 
         /* ========== HEADER SECTION ========== */
@@ -2015,6 +2087,12 @@ const Dairy = ({ showToast }) => {
         .td-distance {
           font-weight: 700;
           color: var(--green-400);
+        }
+
+        .td-remark {
+          color: var(--gray-600);
+          font-style: italic;
+          font-size: 0.88rem;
         }
 
         /* ========== ENTRY OPTIONS MODAL ========== */
@@ -2530,11 +2608,18 @@ const Dairy = ({ showToast }) => {
           flex-direction: column;
         }
 
+        .form-group.full-width {
+          grid-column: 1 / -1;
+        }
+
         .form-group label {
           margin-bottom: 0.4rem;
           font-weight: 600;
           color: var(--gray-700);
           font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
         }
 
         .required {
@@ -2542,16 +2627,24 @@ const Dairy = ({ showToast }) => {
         }
 
         .form-group input,
-        .form-group select {
+        .form-group select,
+        .remark-textarea {
           padding: 0.7rem;
           border: 1px solid var(--purple-200);
           border-radius: 8px;
           font-size: 0.95rem;
           transition: all 0.2s ease;
+          font-family: inherit;
+        }
+
+        .remark-textarea {
+          resize: vertical;
+          min-height: 70px;
         }
 
         .form-group input:focus,
-        .form-group select:focus {
+        .form-group select:focus,
+        .remark-textarea:focus {
           outline: none;
           border-color: var(--purple-400);
           box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
@@ -2607,7 +2700,6 @@ const Dairy = ({ showToast }) => {
           border: 1px solid var(--purple-200);
           border-radius: 8px;
           font-size: 0.95rem;
-         
           background: linear-gradient(135deg, var(--purple-50), var(--pink-100));
           cursor: pointer;
           transition: all 0.2s ease;
@@ -2733,7 +2825,9 @@ const Dairy = ({ showToast }) => {
         }
 
         .shera-cell {
-          min-width: 60px;
+          min-width: 90px;
+          word-wrap: break-word;
+          font-size: 0.75rem;
         }
 
         .text-right {
@@ -2859,6 +2953,10 @@ const Dairy = ({ showToast }) => {
             font-size: 8px;
           }
 
+          .shera-cell {
+            font-size: 8px;
+          }
+
           .gosavara-box {
             margin-top: 0.3cm;
             break-inside: avoid;
@@ -2899,25 +2997,138 @@ const Dairy = ({ showToast }) => {
         }
 
         /* ========== RESPONSIVE STYLES ========== */
-        @media (max-width: 768px) {
+        
+        /* Large Tablet & Desktop (1024px+) - Sidebar-aware */
+        @media (min-width: 1024px) {
+          .dairy-container {
+            max-width: 1400px;
+          }
+
+          /* Adjust for sidebar expanded state */
+          .main-content:not(.sidebar-collapsed) .dairy-container {
+            max-width: calc(100vw - 280px - 4rem);
+          }
+
+          /* Adjust for sidebar collapsed state */
+          .main-content.sidebar-collapsed .dairy-container {
+            max-width: calc(100vw - 80px - 4rem);
+          }
+          
+          .dairy-table th,
+          .dairy-table td {
+            padding: 1rem 0.85rem;
+          }
+        }
+        
+        /* Tablet Portrait (768px - 1023px) - Sidebar-aware */
+        @media (max-width: 1023px) {
+          .dairy-container {
+            padding: 1rem;
+          }
+
+          /* On tablets 768px+, adjust for sidebar states */
+          @media (min-width: 768px) {
+            .main-content:not(.sidebar-collapsed) .dairy-container {
+              max-width: calc(100vw - 280px - 3rem);
+            }
+
+            .main-content.sidebar-collapsed .dairy-container {
+              max-width: calc(100vw - 80px - 3rem);
+            }
+          }
+          
+          .dairy-header {
+            flex-wrap: wrap;
+          }
+          
+          .dairy-header-actions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.6rem;
+          }
+          
+          .dairy-table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          .dairy-table {
+            min-width: 900px;
+          }
+          
+          .dairy-modal-content {
+            max-width: 90%;
+          }
+          
+          .form-row {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .report-controls {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+          }
+        }
+
+        /* Mobile Landscape & Large Phone (600px - 767px) - No sidebar margin */
+        @media (max-width: 767px) {
+          /* Reset container for mobile - ignore sidebar */
+          .main-content .dairy-container,
+          .main-content.sidebar-collapsed .dairy-container,
+          .main-content:not(.sidebar-collapsed) .dairy-container {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+            padding: 0.85rem;
+          }
+
+          .dairy-container {
+            padding: 0.85rem;
+          }
+          
           .dairy-header {
             flex-direction: column;
             align-items: flex-start;
+            gap: 1rem;
+          }
+
+          .dairy-header-left h2 {
+            font-size: 1.4rem;
+          }
+
+          .dairy-header-left p {
+            font-size: 0.875rem;
           }
 
           .dairy-header-actions {
             width: 100%;
-            flex-direction: column;
+            grid-template-columns: 1fr;
           }
 
           .btn-add-dairy,
           .btn-report {
             width: 100%;
             justify-content: center;
+            padding: 0.7rem 1rem;
           }
 
           .dairy-table-container {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          .dairy-table {
+            min-width: 850px;
+          }
+          
+          .dairy-table th,
+          .dairy-table td {
+            padding: 0.75rem 0.6rem;
+            font-size: 0.875rem;
+          }
+          
+          .dairy-table th {
+            font-size: 0.8rem;
           }
 
           .form-row {
@@ -2927,16 +3138,25 @@ const Dairy = ({ showToast }) => {
           .time-input-group {
             gap: 0.3rem;
           }
+          
+          .time-select,
+          .time-period {
+            font-size: 0.9rem;
+            padding: 0.65rem 0.45rem;
+          }
 
           .report-controls {
             width: 100%;
+            flex-direction: column;
           }
 
           .report-controls input[type="month"],
           .btn-print,
           .btn-download,
-          .btn-edit-config {
+          .btn-edit-config,
+          .btn-close-report {
             width: 100%;
+            justify-content: center;
           }
 
           .config-grid {
@@ -2945,6 +3165,7 @@ const Dairy = ({ showToast }) => {
 
           .report-modal-content {
             width: 95vw;
+            max-width: 95%;
           }
 
           .entry-options-actions {
@@ -2963,6 +3184,271 @@ const Dairy = ({ showToast }) => {
           .btn-cancel-delete,
           .btn-confirm-delete {
             width: 100%;
+          }
+          
+          .delete-confirm-modal {
+            max-width: 90%;
+          }
+          
+          .entry-options-modal {
+            max-width: 90%;
+          }
+          
+          .dairy-modal-content {
+            max-width: 95%;
+            max-height: 90vh;
+          }
+        }
+        
+        /* Mobile Portrait (480px - 599px) */
+        @media (max-width: 599px) {
+          .dairy-container {
+            padding: 0.75rem;
+          }
+          
+          .dairy-header-left h2 {
+            font-size: 1.25rem;
+          }
+          
+          .dairy-header-left p {
+            font-size: 0.85rem;
+          }
+          
+          .btn-add-dairy,
+          .btn-report {
+            padding: 0.65rem 0.85rem;
+            font-size: 0.9rem;
+          }
+          
+          .dairy-table {
+            min-width: 750px;
+            font-size: 0.85rem;
+          }
+          
+          .dairy-table th,
+          .dairy-table td {
+            padding: 0.65rem 0.5rem;
+            font-size: 0.825rem;
+          }
+          
+          .dairy-table th {
+            font-size: 0.75rem;
+          }
+          
+          .dairy-modal-header h3 {
+            font-size: 1.05rem;
+          }
+          
+          .form-group label {
+            font-size: 0.85rem;
+          }
+          
+          .form-group input,
+          .form-group select,
+          .remark-textarea {
+            font-size: 16px; /* Prevents zoom on iOS */
+            padding: 0.65rem 0.85rem;
+          }
+          
+          .dairy-modal-footer {
+            padding: 0.85rem 1rem;
+            flex-direction: column;
+          }
+          
+          .btn-cancel,
+          .btn-save {
+            width: 100%;
+            padding: 0.7rem 1rem;
+          }
+          
+          .delete-icon-circle {
+            width: 80px;
+            height: 80px;
+            font-size: 1.5rem;
+          }
+          
+          .delete-content h3 {
+            font-size: 1.3rem;
+          }
+          
+          .delete-content p {
+            font-size: 0.9rem;
+          }
+          
+          .config-panel {
+            padding: 1rem;
+            max-height: 55vh;
+          }
+          
+          .config-field input {
+            font-size: 16px; /* Prevents zoom on iOS */
+          }
+          
+          .report-modal-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+          
+          .report-modal-header h3 {
+            font-size: 1.05rem;
+          }
+        }
+        
+        /* Small Mobile (< 480px) */
+        @media (max-width: 479px) {
+          .dairy-container {
+            padding: 0.6rem;
+          }
+          
+          .dairy-header-left h2 {
+            font-size: 1.15rem;
+            gap: 0.5rem;
+          }
+          
+          .dairy-header-left p {
+            font-size: 0.8rem;
+          }
+          
+          .btn-add-dairy,
+          .btn-report {
+            padding: 0.6rem 0.75rem;
+            font-size: 0.875rem;
+            gap: 0.4rem;
+          }
+          
+          .dairy-table {
+            min-width: 700px;
+          }
+          
+          .dairy-modal-content {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+          }
+          
+          .dairy-modal-header,
+          .report-modal-header {
+            padding: 0.85rem 1rem;
+          }
+          
+          .dairy-form {
+            padding: 0.85rem 1rem;
+          }
+          
+          .form-group {
+            margin-bottom: 1rem;
+          }
+          
+          .time-input-group {
+            gap: 0.25rem;
+          }
+          
+          .time-select,
+          .time-period {
+            padding: 0.6rem 0.4rem;
+            font-size: 0.875rem;
+          }
+          
+          .delete-icon-circle {
+            width: 70px;
+            height: 70px;
+          }
+          
+          .delete-content {
+            padding: 1.25rem;
+          }
+          
+          .delete-actions {
+            padding: 1rem 1.25rem;
+          }
+          
+          .entry-options-modal,
+          .delete-confirm-modal {
+            max-width: 95%;
+            margin: 0.5rem;
+          }
+          
+          .entry-options-header,
+          .entry-details {
+            padding: 1rem;
+          }
+          
+          .entry-options-actions {
+            padding: 1rem;
+            gap: 0.6rem;
+          }
+          
+          .config-panel {
+            padding: 0.85rem;
+          }
+          
+          .config-panel h4 {
+            font-size: 1rem;
+          }
+          
+          .config-section h5 {
+            font-size: 0.875rem;
+          }
+          
+          .report-content {
+            padding: 0.3cm 0.3cm;
+          }
+          
+          .gov-header .line-center,
+          .gov-header .report-subtitle {
+            font-size: 0.8rem;
+          }
+          
+          .gov-header .title {
+            font-size: 0.95rem;
+          }
+          
+          .gov-table {
+            font-size: 0.7rem;
+          }
+        }
+        
+        /* Extra Small Mobile (< 360px) */
+        @media (max-width: 359px) {
+          .dairy-header-left h2 {
+            font-size: 1.05rem;
+          }
+          
+          .dairy-modal-content {
+            margin: 0.25rem;
+          }
+          
+          .form-group input,
+          .form-group select {
+            padding: 0.6rem 0.75rem;
+          }
+          
+          .dairy-table {
+            min-width: 650px;
+          }
+          
+          .config-field input {
+            padding: 0.45rem 0.6rem;
+            font-size: 0.875rem;
+          }
+        }
+        
+        /* Touch device improvements */
+        @media (hover: none) and (pointer: coarse) {
+          .clickable-row {
+            -webkit-tap-highlight-color: rgba(168, 85, 247, 0.1);
+          }
+          
+          .btn-add-dairy,
+          .btn-report,
+          .btn-save,
+          .btn-cancel {
+            min-height: 44px; /* Touch target size */
+          }
+          
+          .time-select,
+          .time-period {
+            min-height: 44px;
           }
         }
       `}</style>

@@ -56,6 +56,7 @@ import {
   BookOpen,
   Plus,
   Save,
+  ArrowLeft,
 } from "lucide-react";
 
 // ============================================================
@@ -1107,472 +1108,6 @@ const DairyContent = () => {
 };
 
 // ============================================================
-// LOG BOOK CONTENT COMPONENT (MINIMIZED)
-// ============================================================
-
-const LogBookContent = () => {
-  const { success, error } = useToast();
-  const { currentUser } = useAuth();
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newLog, setNewLog] = useState({
-    activity: "",
-    description: "",
-    timestamp: new Date().toISOString().split("T")[0],
-    category: "General",
-  });
-
-  const categories = [
-    "General",
-    "Meeting",
-    "Task",
-    "Event",
-    "Note",
-    "Important",
-  ];
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const db = getDatabase();
-    const logbookRef = dbRef(db, `logbook/${currentUser.uid}`);
-
-    const unsubscribe = onValue(
-      logbookRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const logsArray = Object.entries(data)
-            .map(([id, log]) => ({ id, ...log }))
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-          setLogs(logsArray);
-        } else {
-          setLogs([]);
-        }
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Error fetching log entries:", err);
-        error("Failed to load log entries");
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [currentUser, error]);
-
-  const handleAddLog = async (e) => {
-    e.preventDefault();
-
-    if (!newLog.activity.trim()) {
-      error("Please provide an activity description");
-      return;
-    }
-
-    try {
-      const db = getDatabase();
-      const logbookRef = dbRef(db, `logbook/${currentUser.uid}`);
-      const newLogRef = push(logbookRef);
-
-      await set(newLogRef, {
-        ...newLog,
-        createdAt: new Date().toISOString(),
-      });
-
-      success("Log entry added successfully!");
-      setShowAddModal(false);
-      setNewLog({
-        activity: "",
-        description: "",
-        timestamp: new Date().toISOString().split("T")[0],
-        category: "General",
-      });
-    } catch (err) {
-      console.error("Error adding log:", err);
-      error("Failed to add log entry");
-    }
-  };
-
-  const handleDeleteLog = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this log?")) return;
-
-    try {
-      const db = getDatabase();
-      await remove(dbRef(db, `logbook/${currentUser.uid}/${id}`));
-      success("Log deleted successfully!");
-    } catch (err) {
-      console.error("Error deleting log:", err);
-      error("Failed to delete log");
-    }
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = {
-      General: "#64748b",
-      Meeting: "#3b82f6",
-      Task: "#10b981",
-      Event: "#f59e0b",
-      Note: "#8b5cf6",
-      Important: "#ef4444",
-    };
-    return colors[category] || colors.General;
-  };
-
-  return (
-    <>
-      <motion.div
-        className="compact-logbook-container"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="compact-header">
-          <div className="compact-header-left">
-            <h2>
-              <Calendar size={22} />
-              Log Book
-            </h2>
-          </div>
-          <motion.button
-            className="btn-add-log-compact"
-            onClick={() => setShowAddModal(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Plus size={18} />
-            Add Log
-          </motion.button>
-        </div>
-
-        {loading ? (
-          <div className="loading-compact">
-            <div className="spinner-small"></div>
-            <p>Loading...</p>
-          </div>
-        ) : logs.length === 0 ? (
-          <div className="empty-compact">
-            <Calendar size={48} color="#94a3b8" />
-            <h3>No Logs Yet</h3>
-            <button
-              className="btn-empty-compact"
-              onClick={() => setShowAddModal(true)}
-            >
-              <Plus size={16} />
-              Create First Log
-            </button>
-          </div>
-        ) : (
-          <div className="compact-logbook-timeline">
-            <AnimatePresence>
-              {logs.map((log, index) => (
-                <motion.div
-                  key={log.id}
-                  className="compact-log-entry"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ delay: index * 0.03 }}
-                >
-                  <div
-                    className="compact-log-marker"
-                    style={{ background: getCategoryColor(log.category) }}
-                  ></div>
-                  <div className="compact-log-card">
-                    <div className="compact-log-header">
-                      <div className="compact-log-meta">
-                        <span
-                          className="compact-log-category"
-                          style={{ background: getCategoryColor(log.category) }}
-                        >
-                          {log.category}
-                        </span>
-                        <span className="compact-log-date">
-                          {new Date(log.timestamp).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <button
-                        className="btn-delete-log-compact"
-                        onClick={() => handleDeleteLog(log.id)}
-                        title="Delete"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <h4 className="compact-log-activity">{log.activity}</h4>
-                    {log.description && (
-                      <p className="compact-log-description">
-                        {log.description}
-                      </p>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </motion.div>
-
-      {/* Add Log Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            className="modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowAddModal(false)}
-          >
-            <motion.div
-              className="modal-content compact-modal"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h3>
-                  <Calendar size={20} />
-                  New Log Entry
-                </h3>
-                <button onClick={() => setShowAddModal(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <form onSubmit={handleAddLog} className="compact-form">
-                <div className="form-group-compact">
-                  <label htmlFor="log-timestamp">Date</label>
-                  <input
-                    id="log-timestamp"
-                    type="date"
-                    value={newLog.timestamp}
-                    onChange={(e) =>
-                      setNewLog({ ...newLog, timestamp: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group-compact">
-                  <label htmlFor="log-category">Category</label>
-                  <select
-                    id="log-category"
-                    value={newLog.category}
-                    onChange={(e) =>
-                      setNewLog({ ...newLog, category: e.target.value })
-                    }
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group-compact">
-                  <label htmlFor="log-activity">Activity</label>
-                  <input
-                    id="log-activity"
-                    type="text"
-                    placeholder="Activity description"
-                    value={newLog.activity}
-                    onChange={(e) =>
-                      setNewLog({ ...newLog, activity: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group-compact">
-                  <label htmlFor="log-description">Details (Optional)</label>
-                  <textarea
-                    id="log-description"
-                    rows="4"
-                    placeholder="Additional details..."
-                    value={newLog.description}
-                    onChange={(e) =>
-                      setNewLog({ ...newLog, description: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setShowAddModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    <Save size={16} />
-                    Save
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <style>{`
-        .compact-logbook-container {
-          padding: 1rem;
-          max-width: 1100px;
-          margin: 0 auto;
-        }
-
-        .btn-add-log-compact {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          padding: 0.6rem 1.2rem;
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-add-log-compact:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-
-        .compact-logbook-timeline {
-          position: relative;
-          padding-left: 1.5rem;
-        }
-
-        .compact-logbook-timeline::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 2px;
-          background: linear-gradient(180deg, #e2e8f0, #cbd5e1);
-        }
-
-        .compact-log-entry {
-          position: relative;
-          margin-bottom: 1rem;
-        }
-
-        .compact-log-marker {
-          position: absolute;
-          left: -1.95rem;
-          top: 0.4rem;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 0 0 2px #e2e8f0;
-        }
-
-        .compact-log-card {
-          background: white;
-          border-radius: 8px;
-          padding: 0.875rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          border: 1px solid #e2e8f0;
-          transition: all 0.2s ease;
-        }
-
-        .compact-log-card:hover {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          transform: translateX(4px);
-        }
-
-        .compact-log-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.5rem;
-        }
-
-        .compact-log-meta {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-        }
-
-        .compact-log-category {
-          display: inline-block;
-          padding: 0.2rem 0.6rem;
-          border-radius: 999px;
-          color: white;
-          font-size: 0.7rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.03em;
-        }
-
-        .compact-log-date {
-          color: #64748b;
-          font-size: 0.8rem;
-        }
-
-        .btn-delete-log-compact {
-          background: transparent;
-          border: none;
-          color: #64748b;
-          cursor: pointer;
-          padding: 0.2rem;
-          border-radius: 4px;
-          transition: all 0.2s ease;
-        }
-
-        .btn-delete-log-compact:hover {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-
-        .compact-log-activity {
-          margin: 0 0 0.4rem 0;
-          font-size: 1rem;
-          color: #1e293b;
-        }
-
-        .compact-log-description {
-          margin: 0;
-          color: #475569;
-          line-height: 1.5;
-          font-size: 0.85rem;
-          white-space: pre-wrap;
-        }
-
-        .form-group-compact select {
-          width: 100%;
-          padding: 0.65rem;
-          border: 1px solid #cbd5e1;
-          border-radius: 6px;
-          font-size: 0.95rem;
-          transition: all 0.2s ease;
-          background: white;
-        }
-
-        .form-group-compact select:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        @media (max-width: 768px) {
-          .compact-logbook-timeline {
-            padding-left: 1.2rem;
-          }
-
-          .compact-log-marker {
-            left: -1.65rem;
-          }
-        }
-      `}</style>
-    </>
-  );
-};
-
-// ============================================================
 // PORTFOLIO CONTENT (KEEP AS IS - ALREADY COMPACT)
 // ============================================================
 
@@ -1945,6 +1480,7 @@ const Dashboard = () => {
   const { error, info, success } = useToast();
 
   const [activeTab, setActiveTab] = useState("overview");
+  const [statusFilter, setStatusFilter] = useState(null); // NEW: for filtering by status
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -2019,6 +1555,27 @@ const Dashboard = () => {
     }
   };
 
+  // NEW: Handler for clicking stat cards
+  const handleStatCardClick = (filterType) => {
+    setStatusFilter(filterType);
+    setActiveTab("RecordsView");
+    success(
+      `Showing ${
+        filterType === "all"
+          ? "all files"
+          : filterType === "pending"
+          ? "pending files"
+          : "completed files"
+      }`
+    );
+  };
+
+  // NEW: Handler to clear filter
+  const handleClearFilter = () => {
+    setStatusFilter(null);
+    success("Filter cleared");
+  };
+
   const cardVariants = {
     hidden: { opacity: 0, y: 40 },
     visible: (i) => ({
@@ -2026,7 +1583,11 @@ const Dashboard = () => {
       y: 0,
       transition: { delay: 0.13 * i },
     }),
-    hover: { scale: 1.04, boxShadow: "0 6px 24px 0 rgba(31, 38, 135, 0.2)" },
+    hover: {
+      scale: 1.04,
+      boxShadow: "0 6px 24px 0 rgba(31, 38, 135, 0.2)",
+      cursor: "pointer",
+    },
   };
 
   const actionVariants = {
@@ -2038,7 +1599,12 @@ const Dashboard = () => {
     tap: { scale: 0.98, backgroundColor: "#eacdff" },
   };
 
-  const OverviewContent = ({ stats, loading, setActiveTab }) => {
+  const OverviewContent = ({
+    stats,
+    loading,
+    setActiveTab,
+    onStatCardClick,
+  }) => {
     if (loading) {
       return (
         <div className="loading-container">
@@ -2065,6 +1631,7 @@ const Dashboard = () => {
                 userRole === "admin"
                   ? "All uploaded documents"
                   : "Your uploaded documents",
+              filterType: "all",
             },
             {
               color: "gradient-orange",
@@ -2072,6 +1639,7 @@ const Dashboard = () => {
               value: stats.pendingFiles,
               label: "Pending Files",
               desc: "Awaiting processing",
+              filterType: "pending",
             },
             {
               color: "gradient-green",
@@ -2079,16 +1647,19 @@ const Dashboard = () => {
               value: stats.completedFiles,
               label: "Completed Files",
               desc: "Processing finished",
+              filterType: "completed",
             },
           ].map((item, i) => (
             <motion.div
-              className={`stat-card ${item.color}`}
+              className={`stat-card ${item.color} clickable-stat-card`}
               key={item.label}
               variants={cardVariants}
               custom={i}
               initial="hidden"
               animate="visible"
               whileHover="hover"
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onStatCardClick(item.filterType)}
             >
               <div className="stat-icon">{item.icon}</div>
               <div className="stat-info">
@@ -2096,6 +1667,7 @@ const Dashboard = () => {
                 <div className="stat-label">{item.label}</div>
                 <div className="stat-detail">{item.desc}</div>
               </div>
+              <div className="stat-click-hint">Click to view →</div>
             </motion.div>
           ))}
         </div>
@@ -2154,6 +1726,7 @@ const Dashboard = () => {
             files={files}
             loading={loading}
             setActiveTab={setActiveTab}
+            onStatCardClick={handleStatCardClick}
           />
         );
 
@@ -2161,7 +1734,39 @@ const Dashboard = () => {
         return <FileManagementContent />;
 
       case "RecordsView":
-        return <FileRecordsList stats={stats} />;
+        return (
+          <div className="records-view-wrapper">
+            {statusFilter && (
+              <div className="filter-banner">
+                <div className="filter-info">
+                  <span className="filter-icon">
+                    {statusFilter === "all" && "📁"}
+                    {statusFilter === "pending" && "⏳"}
+                    {statusFilter === "completed" && "✅"}
+                  </span>
+                  <span className="filter-text">
+                    Showing{" "}
+                    <strong>
+                      {statusFilter === "all"
+                        ? "All Files"
+                        : statusFilter === "pending"
+                        ? "Pending Files"
+                        : "Completed Files"}
+                    </strong>
+                  </span>
+                </div>
+                <button
+                  className="btn-clear-filter"
+                  onClick={handleClearFilter}
+                >
+                  <X size={16} />
+                  Clear Filter
+                </button>
+              </div>
+            )}
+            <FileRecordsList stats={stats} statusFilter={statusFilter} />
+          </div>
+        );
 
       case "dairy":
         return <Dairy showToast={{ success, error, info }} />;
@@ -2190,6 +1795,7 @@ const Dashboard = () => {
             files={files}
             loading={loading}
             setActiveTab={setActiveTab}
+            onStatCardClick={handleStatCardClick}
           />
         );
     }
@@ -2203,7 +1809,12 @@ const Dashboard = () => {
         userName={userName}
         currentUser={currentUser}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          if (tab !== "RecordsView") {
+            setStatusFilter(null); // Clear filter when changing tabs
+          }
+        }}
         onLogoutClick={() => setLogoutDialogOpen(true)}
       />
 
@@ -2239,6 +1850,105 @@ const Dashboard = () => {
         onCancel={() => setLogoutDialogOpen(false)}
         onConfirm={confirmLogout}
       />
+
+      {/* Additional Styles for New Features */}
+      <style>{`
+        .clickable-stat-card {
+          position: relative;
+          transition: all 0.3s ease;
+        }
+
+        .stat-click-hint {
+          position: absolute;
+          bottom: 0.75rem;
+          right: 1rem;
+          font-size: 0.75rem;
+          color: var(--purple-400);
+          font-weight: 600;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+
+        .clickable-stat-card:hover .stat-click-hint {
+          opacity: 1;
+        }
+
+        .records-view-wrapper {
+          position: relative;
+        }
+
+        .filter-banner {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem 1.5rem;
+          background: linear-gradient(135deg, var(--purple-100), var(--pink-100));
+          border: 2px solid var(--purple-200);
+          border-radius: 12px;
+          margin-bottom: 1.5rem;
+          box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
+        }
+
+        .filter-info {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .filter-icon {
+          font-size: 1.5rem;
+          filter: drop-shadow(0 2px 4px rgba(168, 85, 247, 0.3));
+        }
+
+        .filter-text {
+          font-size: 0.95rem;
+          color: var(--gray-700);
+        }
+
+        .filter-text strong {
+          color: var(--purple-600);
+          font-weight: 700;
+        }
+
+        .btn-clear-filter {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          background: white;
+          border: 2px solid var(--purple-300);
+          border-radius: 8px;
+          color: var(--purple-600);
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .btn-clear-filter:hover {
+          background: var(--purple-50);
+          border-color: var(--purple-400);
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(168, 85, 247, 0.2);
+        }
+
+        @media (max-width: 768px) {
+          .filter-banner {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+          }
+
+          .btn-clear-filter {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .stat-click-hint {
+            display: none;
+          }
+        }
+      `}</style>
     </div>
   );
 };

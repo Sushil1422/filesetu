@@ -394,7 +394,8 @@ const CompactRecordViewerModal = ({
   );
 };
 
-const FileRecordsList = () => {
+// MAIN COMPONENT WITH STATUS FILTER SUPPORT
+const FileRecordsList = ({ stats, statusFilter }) => {
   const { currentUser, userRole } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -418,6 +419,7 @@ const FileRecordsList = () => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
+  // Fetch records from Firebase
   useEffect(() => {
     if (!currentUser) {
       setRecords([]);
@@ -461,8 +463,21 @@ const FileRecordsList = () => {
     return () => unsubscribe();
   }, [currentUser, userRole]);
 
+  // Filter records by search term AND status filter
   useEffect(() => {
     let curr = [...records];
+
+    // Apply status filter first
+    if (statusFilter) {
+      if (statusFilter === "pending") {
+        curr = curr.filter((rec) => rec.status === "Pending" || !rec.status);
+      } else if (statusFilter === "completed") {
+        curr = curr.filter((rec) => rec.status === "Completed");
+      }
+      // If statusFilter === "all", show all records (no filtering needed)
+    }
+
+    // Then apply search filter
     if (searchTerm.trim() !== "") {
       const t = searchTerm.toLowerCase();
       curr = curr.filter(
@@ -474,10 +489,12 @@ const FileRecordsList = () => {
           (rec.subject && rec.subject.toLowerCase().includes(t))
       );
     }
+
+    // Sort by creation date
     setFilteredRecords(
       curr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
     );
-  }, [records, searchTerm]);
+  }, [records, searchTerm, statusFilter]);
 
   const handleRecordClick = (record) => {
     setSelectedRecord(record);
@@ -574,6 +591,15 @@ const FileRecordsList = () => {
     });
   };
 
+  // Get filter display text
+  const getFilterText = () => {
+    if (!statusFilter) return null;
+    if (statusFilter === "all") return "All Files";
+    if (statusFilter === "pending") return "Pending Files";
+    if (statusFilter === "completed") return "Completed Files";
+    return null;
+  };
+
   if (!currentUser) {
     return (
       <div className="records-container">
@@ -606,11 +632,22 @@ const FileRecordsList = () => {
           <div className="header-left">
             <h2 className="records-title">
               <FileText size={24} />
-              <span>{userRole === "admin" ? "All Files" : "My Files"}</span>
+              <span>
+                {getFilterText() ||
+                  (userRole === "admin" ? "All Files" : "My Files")}
+              </span>
             </h2>
             <span className="records-count">
-              {filteredRecords.length} records
+              {filteredRecords.length} record
+              {filteredRecords.length !== 1 ? "s" : ""}
             </span>
+            {statusFilter && (
+              <span className={`filter-badge filter-${statusFilter}`}>
+                {statusFilter === "all" && "📁"}
+                {statusFilter === "pending" && "⏳"}
+                {statusFilter === "completed" && "✅"} {getFilterText()}
+              </span>
+            )}
           </div>
           <div className="search-wrapper">
             <Search size={18} />
@@ -631,7 +668,11 @@ const FileRecordsList = () => {
               <FileText size={64} />
               <h3>No Records Found</h3>
               <p>
-                {searchTerm
+                {statusFilter && searchTerm
+                  ? `No ${getFilterText()?.toLowerCase()} matching "${searchTerm}"`
+                  : statusFilter
+                  ? `No ${getFilterText()?.toLowerCase()} available`
+                  : searchTerm
                   ? "Try adjusting your search"
                   : "No files uploaded yet"}
               </p>
@@ -794,6 +835,16 @@ const FileRecordsList = () => {
           max-width: 1400px;
           margin: 1.5rem auto;
           padding: 1rem;
+          transition: all 0.3s ease;
+        }
+
+        /* Sidebar state adjustments */
+        .main-content:not(.sidebar-collapsed) .records-section {
+          max-width: calc(100vw - 280px - 4rem);
+        }
+
+        .main-content.sidebar-collapsed .records-section {
+          max-width: calc(100vw - 80px - 4rem);
         }
 
         .records-header {
@@ -809,6 +860,7 @@ const FileRecordsList = () => {
           display: flex;
           align-items: center;
           gap: 1rem;
+          flex-wrap: wrap;
         }
 
         .records-title {
@@ -831,6 +883,35 @@ const FileRecordsList = () => {
           font-size: 0.85rem;
           font-weight: 600;
           border: 1px solid #93c5fd;
+        }
+
+        .filter-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.4rem 0.9rem;
+          border-radius: 999px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          border: 2px solid;
+        }
+
+        .filter-badge.filter-all {
+          background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+          color: #1e40af;
+          border-color: #60a5fa;
+        }
+
+        .filter-badge.filter-pending {
+          background: linear-gradient(135deg, #fff7ed, #fed7aa);
+          color: #9a3412;
+          border-color: #fb923c;
+        }
+
+        .filter-badge.filter-completed {
+          background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+          color: #065f46;
+          border-color: #34d399;
         }
 
         .search-wrapper {
@@ -1555,13 +1636,46 @@ const FileRecordsList = () => {
         }
 
         /* Responsive Design */
+        
+        /* Desktop & Large Tablet (1024px+) - Sidebar-aware */
+        @media (min-width: 1024px) {
+          .main-content:not(.sidebar-collapsed) .records-section {
+            max-width: calc(100vw - 280px - 4rem);
+          }
+
+          .main-content.sidebar-collapsed .records-section {
+            max-width: calc(100vw - 80px - 4rem);
+          }
+        }
+
+        /* Tablet adjustments */
         @media (max-width: 1024px) {
           .compact-info-grid {
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           }
+
+          /* Sidebar-aware on tablets 768px+ */
+          @media (min-width: 768px) {
+            .main-content:not(.sidebar-collapsed) .records-section {
+              max-width: calc(100vw - 280px - 3rem);
+            }
+
+            .main-content.sidebar-collapsed .records-section {
+              max-width: calc(100vw - 80px - 3rem);
+            }
+          }
         }
 
+        /* Mobile & Small Tablet (max-width: 767px) - No sidebar margin */
         @media (max-width: 768px) {
+          /* Reset for mobile - ignore sidebar */
+          .main-content .records-section,
+          .main-content.sidebar-collapsed .records-section,
+          .main-content:not(.sidebar-collapsed) .records-section {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+          }
+
           .records-header {
             flex-direction: column;
             align-items: stretch;
@@ -1643,6 +1757,11 @@ const FileRecordsList = () => {
           }
 
           .records-count {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.7rem;
+          }
+
+          .filter-badge {
             font-size: 0.75rem;
             padding: 0.3rem 0.7rem;
           }

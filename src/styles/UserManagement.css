@@ -4,9 +4,26 @@
 
 /* Container & Layout */
 .user-management-container {
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 2rem;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+/* Adjust based on sidebar state */
+.main-content:not(.sidebar-collapsed) .user-management-container {
+  max-width: calc(100vw - 280px - 4rem);
+}
+
+.main-content.sidebar-collapsed .user-management-container {
+  max-width: calc(100vw - 80px - 4rem);
+}
+
+@media (max-width: 1199px) {
+  .user-management-container {
+    max-width: 100%;
+  }
 }
 
 /* ========================================

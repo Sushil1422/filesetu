@@ -846,6 +846,16 @@ const FileUpload = ({ selectedId }) => {
           border-radius: 24px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
           padding: 1.5rem;
+          transition: all 0.3s ease;
+        }
+
+        /* Sidebar state adjustments */
+        .main-content:not(.sidebar-collapsed) .upload-container {
+          max-width: calc(100vw - 280px - 4rem);
+        }
+
+        .main-content.sidebar-collapsed .upload-container {
+          max-width: calc(100vw - 80px - 4rem);
         }
 
         /* Header */
@@ -1328,7 +1338,7 @@ const FileUpload = ({ selectedId }) => {
           background: rgba(0, 0, 0, 0.2);
         }
 
-        /* Tablet Styles */
+        /* Tablet Styles (640px+) - Sidebar-aware on larger tablets */
         @media (min-width: 640px) {
           .upload-wrapper {
             padding: 2rem;
@@ -1337,6 +1347,17 @@ const FileUpload = ({ selectedId }) => {
           .upload-container {
             padding: 2rem;
             border-radius: 28px;
+          }
+
+          /* On tablets 768px+, adjust for sidebar states */
+          @media (min-width: 768px) {
+            .main-content:not(.sidebar-collapsed) .upload-container {
+              max-width: calc(100vw - 280px - 4rem);
+            }
+
+            .main-content.sidebar-collapsed .upload-container {
+              max-width: calc(100vw - 80px - 4rem);
+            }
           }
 
           .form-grid {
@@ -1376,7 +1397,17 @@ const FileUpload = ({ selectedId }) => {
           }
         }
 
-        /* Desktop Styles */
+        /* Mobile (max-width: 767px) - No sidebar margin */
+        @media (max-width: 767px) {
+          .main-content .upload-container,
+          .main-content.sidebar-collapsed .upload-container,
+          .main-content:not(.sidebar-collapsed) .upload-container {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+          }
+        }
+
+        /* Desktop Styles (1024px+) - Sidebar-aware */
         @media (min-width: 1024px) {
           .upload-wrapper {
             padding: 3rem;
@@ -1384,6 +1415,16 @@ const FileUpload = ({ selectedId }) => {
 
           .upload-container {
             padding: 2.5rem;
+          }
+
+          /* Adjust for sidebar expanded state */
+          .main-content:not(.sidebar-collapsed) .upload-container {
+            max-width: calc(100vw - 280px - 6rem);
+          }
+
+          /* Adjust for sidebar collapsed state */
+          .main-content.sidebar-collapsed .upload-container {
+            max-width: calc(100vw - 80px - 6rem);
           }
 
           .upload-header {
