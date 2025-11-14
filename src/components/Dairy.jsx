@@ -49,7 +49,7 @@ const Dairy = ({ showToast }) => {
     new Date().toISOString().slice(0, 7)
   );
 
-  // Report configuration with all editable fields
+  // Report configuration
   const [reportConfig, setReportConfig] = useState({
     employeeName: "एम. बी. कर्नाळे",
     designation: "सहाय्यक अभियंता श्रेणी - 1",
@@ -67,27 +67,25 @@ const Dairy = ({ showToast }) => {
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const printRef = useRef();
 
-  // Form data for new/edit entry with DEFAULT TIME VALUES + REMARK
+  // Form data with DEFAULT VALUES
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     travelFrom: "",
     travelTo: "",
-    timeFromHour: "9", // DEFAULT: 9 AM
-    timeFromMinute: "0", // DEFAULT: 00
+    timeFromHour: "9",
+    timeFromMinute: "0",
     timeFromPeriod: "AM",
-    timeToHour: "5", // DEFAULT: 5 PM
-    timeToMinute: "0", // DEFAULT: 00
+    timeToHour: "5",
+    timeToMinute: "0",
     timeToPeriod: "PM",
     distance: "",
     vehicle: "",
-    remark: "", // NEW: Remark field
+    remark: "",
   });
 
   const [errors, setErrors] = useState({});
 
   // ========== LIFECYCLE EFFECTS ==========
-
-  // Load report configuration from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("dairyReportConfig");
     if (saved) {
@@ -95,7 +93,6 @@ const Dairy = ({ showToast }) => {
     }
   }, []);
 
-  // Fetch entries from Firebase Realtime Database
   useEffect(() => {
     if (!currentUser) return;
 
@@ -126,7 +123,6 @@ const Dairy = ({ showToast }) => {
     return () => unsubscribe();
   }, [currentUser, showToast]);
 
-  // AUTO-ENABLE EDIT MODE WHEN REPORT MODAL OPENS
   useEffect(() => {
     if (showReportModal) {
       setIsEditingConfig(true);
@@ -136,10 +132,6 @@ const Dairy = ({ showToast }) => {
   }, [showReportModal]);
 
   // ========== UTILITY FUNCTIONS ==========
-
-  /**
-   * Format time for display (e.g., "09:30 AM")
-   */
   const formatTimeDisplay = (hour, minute, period) => {
     if (!hour || !minute) return "";
     const h = String(hour).padStart(2, "0");
@@ -147,22 +139,14 @@ const Dairy = ({ showToast }) => {
     return `${h}:${m} ${period}`;
   };
 
-  /**
-   * Convert 12-hour time to 24-hour format
-   */
   const convertTo24 = (hour, minute, period) => {
     let h = parseInt(hour, 10);
     const m = String(minute).padStart(2, "0");
-
     if (period === "PM" && h !== 12) h += 12;
     if (period === "AM" && h === 12) h = 0;
-
     return `${String(h).padStart(2, "0")}:${m}`;
   };
 
-  /**
-   * Calculate duration between two times
-   */
   const calculateDuration = (timeFrom, timeTo) => {
     if (!timeFrom || !timeTo) return "N/A";
 
@@ -183,7 +167,6 @@ const Dairy = ({ showToast }) => {
     let startDate = new Date(`2000-01-01T${start24}`);
     let endDate = new Date(`2000-01-01T${end24}`);
 
-    // Handle overnight travel
     if (endDate <= startDate) {
       endDate = new Date(`2000-01-02T${end24}`);
     }
@@ -196,46 +179,26 @@ const Dairy = ({ showToast }) => {
     return `${hours}h ${minutes}m`;
   };
 
-  /**
-   * Format date in Marathi locale
-   */
   const formatDate = (d) =>
     new Date(d).toLocaleDateString("mr-IN", { day: "2-digit", month: "short" });
 
-  /**
-   * Format day name in Marathi
-   */
   const formatDay = (d) =>
     new Date(d).toLocaleDateString("mr-IN", { weekday: "short" });
 
-  /**
-   * Get formatted month for report display (MM/YYYY)
-   */
   const getFormattedMonth = () => {
     const [year, month] = selectedMonth.split("-");
     return `${month}/${year}`;
   };
 
-  /**
-   * Validate Indian vehicle registration number
-   * Format: XX##XX#### or XX##X#### (e.g., MH10GF3456, MH12AB1234)
-   */
   const validateVehicleNumber = (vehicleNo) => {
     const pattern = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/i;
     return pattern.test(vehicleNo.replace(/\s+/g, ""));
   };
 
   // ========== DATA COMPUTATION ==========
-
-  /**
-   * Filter entries by selected month
-   */
   const getMonthlyEntries = () =>
     entries.filter((e) => e.date?.slice(0, 7) === selectedMonth);
 
-  /**
-   * Calculate monthly statistics
-   */
   const calculateMonthlyStats = () => {
     const monthly = getMonthlyEntries();
     const totalDistance = monthly.reduce(
@@ -246,10 +209,6 @@ const Dairy = ({ showToast }) => {
   };
 
   // ========== FORM VALIDATION ==========
-
-  /**
-   * Validate entry form data
-   */
   const validateForm = () => {
     const newErrors = {};
 
@@ -258,7 +217,6 @@ const Dairy = ({ showToast }) => {
       newErrors.travelFrom = "Travel From is required";
     if (!formData.travelTo.trim()) newErrors.travelTo = "Travel To is required";
 
-    // Validate start time
     if (!formData.timeFromHour || !formData.timeFromMinute) {
       newErrors.timeFrom = "Start time is required";
     } else {
@@ -269,7 +227,6 @@ const Dairy = ({ showToast }) => {
       }
     }
 
-    // Validate end time
     if (!formData.timeToHour || !formData.timeToMinute) {
       newErrors.timeTo = "End time is required";
     } else {
@@ -280,7 +237,6 @@ const Dairy = ({ showToast }) => {
       }
     }
 
-    // Validate distance
     if (
       !formData.distance ||
       isNaN(formData.distance) ||
@@ -288,40 +244,30 @@ const Dairy = ({ showToast }) => {
     )
       newErrors.distance = "Distance must be a positive number";
 
-    // Validate vehicle number
     if (!formData.vehicle.trim()) {
       newErrors.vehicle = "Vehicle No is required";
     } else if (!validateVehicleNumber(formData.vehicle)) {
       newErrors.vehicle = "Invalid format. Use: MH10GF3456";
     }
 
-    // Remark is optional, no validation needed
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // ========== EVENT HANDLERS ==========
-
-  /**
-   * Handle input change for form fields
-   */
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Validate hour input (1-12)
     if (name === "timeFromHour" || name === "timeToHour") {
       const num = parseInt(value, 10);
       if (value && (num < 1 || num > 12)) return;
     }
 
-    // Validate minute input (0-59)
     if (name === "timeFromMinute" || name === "timeToMinute") {
       const num = parseInt(value, 10);
       if (value && (num < 0 || num > 59)) return;
     }
 
-    // Auto-format vehicle number (uppercase and remove spaces)
     if (name === "vehicle") {
       setFormData((f) => ({
         ...f,
@@ -331,33 +277,22 @@ const Dairy = ({ showToast }) => {
       setFormData((f) => ({ ...f, [name]: value }));
     }
 
-    // Clear errors for the field being edited
     if (errors[name] || errors.timeFrom || errors.timeTo) {
       setErrors((er) => ({ ...er, [name]: "", timeFrom: "", timeTo: "" }));
     }
   };
 
-  /**
-   * Handle row click - show edit/delete options
-   */
   const handleRowClick = (entry) => {
     setSelectedEntry(entry);
   };
 
-  /**
-   * Close entry options modal
-   */
   const closeEntryOptions = () => {
     setSelectedEntry(null);
   };
 
-  /**
-   * Open edit modal with selected entry data
-   */
   const handleEditEntry = () => {
     if (!selectedEntry) return;
 
-    // Parse time from stored format
     const parseStoredTime = (timeStr) => {
       const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
       if (!match) return { hour: "", minute: "", period: "AM" };
@@ -371,7 +306,6 @@ const Dairy = ({ showToast }) => {
     const timeFrom = parseStoredTime(selectedEntry.timeFrom);
     const timeTo = parseStoredTime(selectedEntry.timeTo);
 
-    // Set form data with existing entry values (including remark)
     setFormData({
       date: selectedEntry.date,
       travelFrom: selectedEntry.travelFrom,
@@ -384,34 +318,22 @@ const Dairy = ({ showToast }) => {
       timeToPeriod: timeTo.period,
       distance: selectedEntry.distance,
       vehicle: selectedEntry.vehicle,
-      remark: selectedEntry.remark || "", // Include remark
+      remark: selectedEntry.remark || "",
     });
 
-    // Store the ID for update operation
     setEditingEntryId(selectedEntry.id);
-
-    // Close options modal and open edit modal
     setSelectedEntry(null);
     setShowEditModal(true);
   };
 
-  /**
-   * Show delete confirmation modal
-   */
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
 
-  /**
-   * Cancel delete operation
-   */
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
   };
 
-  /**
-   * Confirm and execute delete operation
-   */
   const confirmDelete = async () => {
     if (!selectedEntry) return;
 
@@ -428,9 +350,6 @@ const Dairy = ({ showToast }) => {
     }
   };
 
-  /**
-   * Add new entry to database
-   */
   const handleAddEntry = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -460,7 +379,7 @@ const Dairy = ({ showToast }) => {
         timeTo,
         distance: formData.distance,
         vehicle: formData.vehicle,
-        remark: formData.remark || "", // Save remark
+        remark: formData.remark || "",
         createdAt: new Date().toISOString(),
       });
 
@@ -473,13 +392,9 @@ const Dairy = ({ showToast }) => {
     }
   };
 
-  /**
-   * Update existing entry in database
-   */
   const handleUpdateEntry = async (e) => {
     e.preventDefault();
 
-    // Check if we have the entry ID
     if (!editingEntryId) {
       showToast?.error("Entry ID not found");
       return;
@@ -512,7 +427,7 @@ const Dairy = ({ showToast }) => {
         timeTo,
         distance: formData.distance,
         vehicle: formData.vehicle,
-        remark: formData.remark || "", // Update remark
+        remark: formData.remark || "",
         updatedAt: new Date().toISOString(),
       });
 
@@ -526,52 +441,37 @@ const Dairy = ({ showToast }) => {
     }
   };
 
-  /**
-   * Reset form to initial state WITH DEFAULT TIME VALUES
-   */
   const resetForm = () => {
     setFormData({
       date: new Date().toISOString().split("T")[0],
       travelFrom: "",
       travelTo: "",
-      timeFromHour: "9", // DEFAULT: 9 AM
-      timeFromMinute: "0", // DEFAULT: 00
+      timeFromHour: "9",
+      timeFromMinute: "0",
       timeFromPeriod: "AM",
-      timeToHour: "5", // DEFAULT: 5 PM
-      timeToMinute: "0", // DEFAULT: 00
+      timeToHour: "5",
+      timeToMinute: "0",
       timeToPeriod: "PM",
       distance: "",
       vehicle: "",
-      remark: "", // Reset remark
+      remark: "",
     });
     setErrors({});
   };
 
-  /**
-   * Save report configuration to localStorage
-   */
   const saveReportConfig = () => {
     localStorage.setItem("dairyReportConfig", JSON.stringify(reportConfig));
     setIsEditingConfig(false);
     showToast?.success("Report configuration saved!");
   };
 
-  // ========== PRINT & PDF FUNCTIONS ==========
-
-  /**
-   * Trigger browser print dialog
-   */
   const handlePrint = () => window.print();
 
-  /**
-   * Generate and download PDF report
-   */
   const handleDownloadPDF = async () => {
     try {
       const input = printRef.current;
       if (!input) return;
 
-      // Generate canvas from HTML
       const canvas = await html2canvas(input, {
         scale: 2.5,
         useCORS: true,
@@ -579,7 +479,6 @@ const Dairy = ({ showToast }) => {
       });
       const imgData = canvas.toDataURL("image/png");
 
-      // Create PDF
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -587,7 +486,6 @@ const Dairy = ({ showToast }) => {
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Fit to single page
       if (imgHeight > pageHeight) {
         const ratio = pageHeight / imgHeight;
         const finalWidth = imgWidth * ratio;
@@ -598,7 +496,6 @@ const Dairy = ({ showToast }) => {
         pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
       }
 
-      // Download with formatted filename
       const [yStr, mStr] = selectedMonth.split("-");
       pdf.save(`Monthly-Travel-${mStr}-${yStr}.pdf`);
       showToast?.success("PDF downloaded successfully!");
@@ -608,21 +505,19 @@ const Dairy = ({ showToast }) => {
     }
   };
 
-  // ========== COMPUTED VALUES ==========
   const monthly = calculateMonthlyStats();
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
-  // ========== RENDER ==========
   return (
     <>
-      {/* ========== MAIN CONTAINER ========== */}
+      {/* MAIN CONTAINER */}
       <motion.div
         className="dairy-container"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        {/* Page Header */}
+        {/* Header */}
         <div className="dairy-header">
           <div className="dairy-header-left">
             <h2>
@@ -653,15 +548,13 @@ const Dairy = ({ showToast }) => {
           </div>
         </div>
 
-        {/* ========== ENTRIES TABLE ========== */}
+        {/* TABLE */}
         {loading ? (
-          // Loading State
           <div className="dairy-loading">
             <div className="spinner-dairy" />
             <p>Loading entries...</p>
           </div>
         ) : entries.length === 0 ? (
-          // Empty State
           <div className="dairy-empty">
             <BookOpen size={64} color="#c4b5fd" />
             <h3>No Travel Entries Yet</h3>
@@ -675,7 +568,6 @@ const Dairy = ({ showToast }) => {
             </button>
           </div>
         ) : (
-          // Entries Table
           <div className="dairy-table-container">
             <table className="dairy-table">
               <thead>
@@ -746,7 +638,7 @@ const Dairy = ({ showToast }) => {
         )}
       </motion.div>
 
-      {/* ========== ENTRY OPTIONS MODAL (Edit/Delete) ========== */}
+      {/* ENTRY OPTIONS MODAL */}
       <AnimatePresence>
         {selectedEntry && !showDeleteConfirm && (
           <motion.div
@@ -832,7 +724,7 @@ const Dairy = ({ showToast }) => {
         )}
       </AnimatePresence>
 
-      {/* ========== DELETE CONFIRMATION MODAL ========== */}
+      {/* DELETE CONFIRMATION */}
       <AnimatePresence>
         {showDeleteConfirm && selectedEntry && (
           <motion.div
@@ -849,7 +741,6 @@ const Dairy = ({ showToast }) => {
               exit={{ scale: 0.8, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Warning Icon */}
               <div className="delete-icon-container">
                 <motion.div
                   className="delete-icon-circle"
@@ -861,7 +752,6 @@ const Dairy = ({ showToast }) => {
                 </motion.div>
               </div>
 
-              {/* Content */}
               <div className="delete-content">
                 <h3>Delete Entry?</h3>
                 <p>
@@ -869,7 +759,6 @@ const Dairy = ({ showToast }) => {
                   cannot be undone.
                 </p>
 
-                {/* Entry Summary */}
                 <div className="delete-entry-summary">
                   <div className="summary-item">
                     <span className="summary-label">Date:</span>
@@ -899,7 +788,6 @@ const Dairy = ({ showToast }) => {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="delete-actions">
                 <button onClick={cancelDelete} className="btn-cancel-delete">
                   Cancel
@@ -914,11 +802,11 @@ const Dairy = ({ showToast }) => {
         )}
       </AnimatePresence>
 
-      {/* ========== ADD ENTRY MODAL ========== */}
+      {/* ADD MODAL */}
       <AnimatePresence>
         {showAddModal && (
           <motion.div
-            className="dairy-modal-backdrop"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 overflow-y-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -928,14 +816,14 @@ const Dairy = ({ showToast }) => {
             }}
           >
             <motion.div
-              className="dairy-modal-content"
+              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.94, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="dairy-modal-header">
-                <h3>
+              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-t-2xl flex items-center justify-between z-10">
+                <h3 className="flex items-center gap-2 text-xl font-bold">
                   <BookOpen size={22} />
                   New Travel Entry
                 </h3>
@@ -944,39 +832,37 @@ const Dairy = ({ showToast }) => {
                     setShowAddModal(false);
                     resetForm();
                   }}
-                  className="btn-close-modal"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleAddEntry} className="dairy-form">
-                {/* Date Field */}
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="date">
-                      Date <span className="required">*</span>
-                    </label>
-                    <input
-                      id="date"
-                      name="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={handleChange}
-                      className={errors.date ? "error" : ""}
-                      max={new Date().toISOString().split("T")[0]}
-                    />
-                    {errors.date && (
-                      <span className="error-text">{errors.date}</span>
-                    )}
-                  </div>
+              <form onSubmit={handleAddEntry} className="p-6 space-y-6">
+                {/* Date */}
+                <div>
+                  <label htmlFor="date" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="date"
+                    name="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 rounded-xl border-2 ${errors.date ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
+                    max={new Date().toISOString().split("T")[0]}
+                  />
+                  {errors.date && (
+                    <span className="text-red-500 text-sm mt-1 block">{errors.date}</span>
+                  )}
                 </div>
 
-                {/* From/To Fields */}
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="travelFrom">
-                      Travel From <span className="required">*</span>
+                {/* From/To */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="travelFrom" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Travel From <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="travelFrom"
@@ -985,16 +871,16 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., मुंबई / Mumbai"
                       value={formData.travelFrom}
                       onChange={handleChange}
-                      className={errors.travelFrom ? "error" : ""}
+                      className={`w-full px-4 py-3 rounded-xl border-2 ${errors.travelFrom ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                     />
                     {errors.travelFrom && (
-                      <span className="error-text">{errors.travelFrom}</span>
+                      <span className="text-red-500 text-sm mt-1 block">{errors.travelFrom}</span>
                     )}
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="travelTo">
-                      Travel To <span className="required">*</span>
+                  <div>
+                    <label htmlFor="travelTo" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Travel To <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="travelTo"
@@ -1003,29 +889,26 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., पुणे / Pune"
                       value={formData.travelTo}
                       onChange={handleChange}
-                      className={errors.travelTo ? "error" : ""}
+                      className={`w-full px-4 py-3 rounded-xl border-2 ${errors.travelTo ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                     />
                     {errors.travelTo && (
-                      <span className="error-text">{errors.travelTo}</span>
+                      <span className="text-red-500 text-sm mt-1 block">{errors.travelTo}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Time Fields */}
-                <div className="form-row">
-                  {/* Time From */}
-                  <div className="form-group">
-                    <label>
-                      Time From <span className="required">*</span>
+                {/* Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Time From <span className="text-red-500">*</span>
                     </label>
-                    <div className="time-input-group">
+                    <div className="flex items-center gap-2">
                       <select
                         name="timeFromHour"
                         value={formData.timeFromHour}
                         onChange={handleChange}
-                        className={
-                          errors.timeFrom ? "error time-select" : "time-select"
-                        }
+                        className={`flex-1 px-3 py-3 rounded-xl border-2 ${errors.timeFrom ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                       >
                         <option value="">HH</option>
                         {hours.map((h) => (
@@ -1034,14 +917,12 @@ const Dairy = ({ showToast }) => {
                           </option>
                         ))}
                       </select>
-                      <span className="time-separator">:</span>
+                      <span className="text-gray-500 font-bold">:</span>
                       <select
                         name="timeFromMinute"
                         value={formData.timeFromMinute}
                         onChange={handleChange}
-                        className={
-                          errors.timeFrom ? "error time-select" : "time-select"
-                        }
+                        className={`flex-1 px-3 py-3 rounded-xl border-2 ${errors.timeFrom ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                       >
                         <option value="">MM</option>
                         {minutes.map((m) => (
@@ -1054,30 +935,27 @@ const Dairy = ({ showToast }) => {
                         name="timeFromPeriod"
                         value={formData.timeFromPeriod}
                         onChange={handleChange}
-                        className="time-period"
+                        className="px-3 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 outline-none transition-colors"
                       >
                         <option value="AM">AM</option>
                         <option value="PM">PM</option>
                       </select>
                     </div>
                     {errors.timeFrom && (
-                      <span className="error-text">{errors.timeFrom}</span>
+                      <span className="text-red-500 text-sm mt-1 block">{errors.timeFrom}</span>
                     )}
                   </div>
 
-                  {/* Time To */}
-                  <div className="form-group">
-                    <label>
-                      Time To <span className="required">*</span>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Time To <span className="text-red-500">*</span>
                     </label>
-                    <div className="time-input-group">
+                    <div className="flex items-center gap-2">
                       <select
                         name="timeToHour"
                         value={formData.timeToHour}
                         onChange={handleChange}
-                        className={
-                          errors.timeTo ? "error time-select" : "time-select"
-                        }
+                        className={`flex-1 px-3 py-3 rounded-xl border-2 ${errors.timeTo ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                       >
                         <option value="">HH</option>
                         {hours.map((h) => (
@@ -1086,14 +964,12 @@ const Dairy = ({ showToast }) => {
                           </option>
                         ))}
                       </select>
-                      <span className="time-separator">:</span>
+                      <span className="text-gray-500 font-bold">:</span>
                       <select
                         name="timeToMinute"
                         value={formData.timeToMinute}
                         onChange={handleChange}
-                        className={
-                          errors.timeTo ? "error time-select" : "time-select"
-                        }
+                        className={`flex-1 px-3 py-3 rounded-xl border-2 ${errors.timeTo ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                       >
                         <option value="">MM</option>
                         {minutes.map((m) => (
@@ -1106,23 +982,23 @@ const Dairy = ({ showToast }) => {
                         name="timeToPeriod"
                         value={formData.timeToPeriod}
                         onChange={handleChange}
-                        className="time-period"
+                        className="px-3 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 outline-none transition-colors"
                       >
                         <option value="AM">AM</option>
                         <option value="PM">PM</option>
                       </select>
                     </div>
                     {errors.timeTo && (
-                      <span className="error-text">{errors.timeTo}</span>
+                      <span className="text-red-500 text-sm mt-1 block">{errors.timeTo}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Distance/Vehicle Fields */}
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="distance">
-                      Distance (km) <span className="required">*</span>
+                {/* Distance/Vehicle */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="distance" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Distance (km) <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="distance"
@@ -1133,16 +1009,16 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., 150"
                       value={formData.distance}
                       onChange={handleChange}
-                      className={errors.distance ? "error" : ""}
+                      className={`w-full px-4 py-3 rounded-xl border-2 ${errors.distance ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                     />
                     {errors.distance && (
-                      <span className="error-text">{errors.distance}</span>
+                      <span className="text-red-500 text-sm mt-1 block">{errors.distance}</span>
                     )}
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="vehicle">
-                      Vehicle No <span className="required">*</span>
+                  <div>
+                    <label htmlFor="vehicle" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Vehicle No <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="vehicle"
@@ -1151,39 +1027,36 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., MH10GF3456"
                       value={formData.vehicle}
                       onChange={handleChange}
-                      className={errors.vehicle ? "error" : ""}
+                      className={`w-full px-4 py-3 rounded-xl border-2 ${errors.vehicle ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'} outline-none transition-colors`}
                       maxLength="13"
                     />
                     {errors.vehicle && (
-                      <span className="error-text">{errors.vehicle}</span>
+                      <span className="text-red-500 text-sm mt-1 block">{errors.vehicle}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Remark Field */}
-                <div className="form-row">
-                  <div className="form-group full-width">
-                    <label htmlFor="remark">
-                      <MessageSquare size={16} className="inline-icon" />
-                      Remark (Optional)
-                    </label>
-                    <textarea
-                      id="remark"
-                      name="remark"
-                      rows="3"
-                      placeholder="Add any notes or remarks about this travel..."
-                      value={formData.remark}
-                      onChange={handleChange}
-                      className="remark-textarea"
-                    />
-                  </div>
+                {/* Remark */}
+                <div>
+                  <label htmlFor="remark" className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <MessageSquare size={16} />
+                    Remark (Optional)
+                  </label>
+                  <textarea
+                    id="remark"
+                    name="remark"
+                    rows="3"
+                    placeholder="Add any notes or remarks..."
+                    value={formData.remark}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 outline-none transition-colors resize-none"
+                  />
                 </div>
 
-                {/* Form Footer */}
-                <div className="dairy-modal-footer">
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-200">
                   <button
                     type="button"
-                    className="btn-cancel"
+                    className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
                     onClick={() => {
                       setShowAddModal(false);
                       resetForm();
@@ -1191,7 +1064,10 @@ const Dairy = ({ showToast }) => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn-save">
+                  <button 
+                    type="submit" 
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all"
+                  >
                     <Save size={18} />
                     Save Entry
                   </button>
@@ -1202,7 +1078,7 @@ const Dairy = ({ showToast }) => {
         )}
       </AnimatePresence>
 
-      {/* ========== EDIT ENTRY MODAL ========== */}
+      {/* EDIT MODAL */}
       <AnimatePresence>
         {showEditModal && (
           <motion.div
@@ -1240,8 +1116,8 @@ const Dairy = ({ showToast }) => {
                 </button>
               </div>
 
-              {/* Same form structure as Add Modal */}
               <form onSubmit={handleUpdateEntry} className="dairy-form">
+                {/* Same form fields as Add Modal */}
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="edit-date">
@@ -1253,7 +1129,7 @@ const Dairy = ({ showToast }) => {
                       type="date"
                       value={formData.date}
                       onChange={handleChange}
-                      className={errors.date ? "error" : ""}
+                      className={`form-input ${errors.date ? "error" : ""}`}
                       max={new Date().toISOString().split("T")[0]}
                     />
                     {errors.date && (
@@ -1274,7 +1150,7 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., मुंबई / Mumbai"
                       value={formData.travelFrom}
                       onChange={handleChange}
-                      className={errors.travelFrom ? "error" : ""}
+                      className={`form-input ${errors.travelFrom ? "error" : ""}`}
                     />
                     {errors.travelFrom && (
                       <span className="error-text">{errors.travelFrom}</span>
@@ -1292,7 +1168,7 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., पुणे / Pune"
                       value={formData.travelTo}
                       onChange={handleChange}
-                      className={errors.travelTo ? "error" : ""}
+                      className={`form-input ${errors.travelTo ? "error" : ""}`}
                     />
                     {errors.travelTo && (
                       <span className="error-text">{errors.travelTo}</span>
@@ -1310,9 +1186,7 @@ const Dairy = ({ showToast }) => {
                         name="timeFromHour"
                         value={formData.timeFromHour}
                         onChange={handleChange}
-                        className={
-                          errors.timeFrom ? "error time-select" : "time-select"
-                        }
+                        className={`time-select ${errors.timeFrom ? "error" : ""}`}
                       >
                         <option value="">HH</option>
                         {hours.map((h) => (
@@ -1326,9 +1200,7 @@ const Dairy = ({ showToast }) => {
                         name="timeFromMinute"
                         value={formData.timeFromMinute}
                         onChange={handleChange}
-                        className={
-                          errors.timeFrom ? "error time-select" : "time-select"
-                        }
+                        className={`time-select ${errors.timeFrom ? "error" : ""}`}
                       >
                         <option value="">MM</option>
                         {minutes.map((m) => (
@@ -1361,9 +1233,7 @@ const Dairy = ({ showToast }) => {
                         name="timeToHour"
                         value={formData.timeToHour}
                         onChange={handleChange}
-                        className={
-                          errors.timeTo ? "error time-select" : "time-select"
-                        }
+                        className={`time-select ${errors.timeTo ? "error" : ""}`}
                       >
                         <option value="">HH</option>
                         {hours.map((h) => (
@@ -1377,9 +1247,7 @@ const Dairy = ({ showToast }) => {
                         name="timeToMinute"
                         value={formData.timeToMinute}
                         onChange={handleChange}
-                        className={
-                          errors.timeTo ? "error time-select" : "time-select"
-                        }
+                        className={`time-select ${errors.timeTo ? "error" : ""}`}
                       >
                         <option value="">MM</option>
                         {minutes.map((m) => (
@@ -1418,7 +1286,7 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., 150"
                       value={formData.distance}
                       onChange={handleChange}
-                      className={errors.distance ? "error" : ""}
+                      className={`form-input ${errors.distance ? "error" : ""}`}
                     />
                     {errors.distance && (
                       <span className="error-text">{errors.distance}</span>
@@ -1436,7 +1304,7 @@ const Dairy = ({ showToast }) => {
                       placeholder="e.g., MH10GF3456"
                       value={formData.vehicle}
                       onChange={handleChange}
-                      className={errors.vehicle ? "error" : ""}
+                      className={`form-input ${errors.vehicle ? "error" : ""}`}
                       maxLength="13"
                     />
                     {errors.vehicle && (
@@ -1445,7 +1313,6 @@ const Dairy = ({ showToast }) => {
                   </div>
                 </div>
 
-                {/* Remark Field */}
                 <div className="form-row">
                   <div className="form-group full-width">
                     <label htmlFor="edit-remark">
@@ -1456,7 +1323,7 @@ const Dairy = ({ showToast }) => {
                       id="edit-remark"
                       name="remark"
                       rows="3"
-                      placeholder="Add any notes or remarks about this travel..."
+                      placeholder="Add any notes or remarks..."
                       value={formData.remark}
                       onChange={handleChange}
                       className="remark-textarea"
@@ -1487,7 +1354,7 @@ const Dairy = ({ showToast }) => {
         )}
       </AnimatePresence>
 
-      {/* ========== MONTHLY REPORT MODAL ========== */}
+      {/* REPORT MODAL */}
       <AnimatePresence>
         {showReportModal && (
           <motion.div
@@ -1519,7 +1386,6 @@ const Dairy = ({ showToast }) => {
                   <button
                     onClick={() => setIsEditingConfig(!isEditingConfig)}
                     className="btn-edit-config"
-                    title="Edit Report Details"
                   >
                     <Edit2 size={18} />
                     {isEditingConfig ? "Hide" : "Edit"}
@@ -1549,7 +1415,7 @@ const Dairy = ({ showToast }) => {
                     <h5>Basic Information</h5>
                     <div className="config-grid">
                       <div className="config-field">
-                        <label>Employee Name (कर्मचारी नाव)</label>
+                        <label>Employee Name</label>
                         <input
                           type="text"
                           value={reportConfig.employeeName}
@@ -1559,11 +1425,10 @@ const Dairy = ({ showToast }) => {
                               employeeName: e.target.value,
                             })
                           }
-                          placeholder="श्री. नाव"
                         />
                       </div>
                       <div className="config-field">
-                        <label>Designation (पदनाम)</label>
+                        <label>Designation</label>
                         <input
                           type="text"
                           value={reportConfig.designation}
@@ -1573,11 +1438,10 @@ const Dairy = ({ showToast }) => {
                               designation: e.target.value,
                             })
                           }
-                          placeholder="सहाय्यक अभियंता श्रेणी - 1"
                         />
                       </div>
                       <div className="config-field">
-                        <label>Department (विभाग)</label>
+                        <label>Department</label>
                         <input
                           type="text"
                           value={reportConfig.department}
@@ -1587,11 +1451,10 @@ const Dairy = ({ showToast }) => {
                               department: e.target.value,
                             })
                           }
-                          placeholder="विभाग"
                         />
                       </div>
                       <div className="config-field">
-                        <label>Sub Department (उप विभाग)</label>
+                        <label>Sub Department</label>
                         <input
                           type="text"
                           value={reportConfig.subDepartment}
@@ -1601,7 +1464,6 @@ const Dairy = ({ showToast }) => {
                               subDepartment: e.target.value,
                             })
                           }
-                          placeholder="उप विभाग"
                         />
                       </div>
                     </div>
@@ -1611,7 +1473,7 @@ const Dairy = ({ showToast }) => {
                     <h5>Office Information</h5>
                     <div className="config-grid">
                       <div className="config-field">
-                        <label>Office Name (कार्यालयाचे नाव)</label>
+                        <label>Office Name</label>
                         <input
                           type="text"
                           value={reportConfig.officeName}
@@ -1621,11 +1483,10 @@ const Dairy = ({ showToast }) => {
                               officeName: e.target.value,
                             })
                           }
-                          placeholder="कार्यालयाचे नाव"
                         />
                       </div>
                       <div className="config-field">
-                        <label>Office Location (कार्यालयाचे ठिकाण/गाव)</label>
+                        <label>Office Location</label>
                         <input
                           type="text"
                           value={reportConfig.officeLocation}
@@ -1635,17 +1496,16 @@ const Dairy = ({ showToast }) => {
                               officeLocation: e.target.value,
                             })
                           }
-                          placeholder="ठिकाण/गाव"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div className="config-section">
-                    <h5>Gosavara Details (गोषवारा तपशील)</h5>
+                    <h5>Gosavara Details</h5>
                     <div className="config-grid">
                       <div className="config-field">
-                        <label>क्षेत्रीय कामाचे एकूण दिवस</label>
+                        <label>Field Work Days</label>
                         <input
                           type="text"
                           value={reportConfig.fieldWorkDays}
@@ -1655,11 +1515,10 @@ const Dairy = ({ showToast }) => {
                               fieldWorkDays: e.target.value,
                             })
                           }
-                          placeholder="उदा. 10"
                         />
                       </div>
                       <div className="config-field">
-                        <label>मुख्यालयाबाहेरील कामाचे दिवस</label>
+                        <label>Out of HQ Days</label>
                         <input
                           type="text"
                           value={reportConfig.outOfHQDays}
@@ -1669,11 +1528,10 @@ const Dairy = ({ showToast }) => {
                               outOfHQDays: e.target.value,
                             })
                           }
-                          placeholder="उदा. 5"
                         />
                       </div>
                       <div className="config-field">
-                        <label>मुख्यालयातील एकूण दिवस</label>
+                        <label>HQ Days</label>
                         <input
                           type="text"
                           value={reportConfig.hqDays}
@@ -1683,11 +1541,10 @@ const Dairy = ({ showToast }) => {
                               hqDays: e.target.value,
                             })
                           }
-                          placeholder="उदा. 12"
                         />
                       </div>
                       <div className="config-field">
-                        <label>साप्ताहीक सुट्टी व इतर सुट्टी</label>
+                        <label>Weekly Holidays</label>
                         <input
                           type="text"
                           value={reportConfig.weeklyHolidays}
@@ -1697,11 +1554,10 @@ const Dairy = ({ showToast }) => {
                               weeklyHolidays: e.target.value,
                             })
                           }
-                          placeholder="उदा. 4"
                         />
                       </div>
                       <div className="config-field">
-                        <label>एकूण दिवस</label>
+                        <label>Total Days</label>
                         <input
                           type="text"
                           value={reportConfig.totalDays}
@@ -1711,7 +1567,6 @@ const Dairy = ({ showToast }) => {
                               totalDays: e.target.value,
                             })
                           }
-                          placeholder="उदा. 31"
                         />
                       </div>
                     </div>
@@ -1750,14 +1605,14 @@ const Dairy = ({ showToast }) => {
                 <table className="gov-table">
                   <thead>
                     <tr>
-                      <th style={{ width: "50px" }}>दिनांक</th>
-                      <th style={{ width: "45px" }}>वार</th>
-                      <th style={{ width: "115px" }}>पासून</th>
-                      <th style={{ width: "115px" }}>पर्यंत</th>
-                      <th style={{ width: "90px" }}>वेळ</th>
-                      <th style={{ width: "50px" }}>अंतर</th>
-                      <th style={{ width: "80px" }}>वाहन</th>
-                      <th style={{ width: "120px" }}>शेरा</th>
+                      <th>दिनांक</th>
+                      <th>वार</th>
+                      <th>पासून</th>
+                      <th>पर्यंत</th>
+                      <th>वेळ</th>
+                      <th>अंतर</th>
+                      <th>वाहन</th>
+                      <th>शेरा</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1824,19 +1679,17 @@ const Dairy = ({ showToast }) => {
 
                 <div className="sign-section">
                   <div className="sign-name">
-                    ( {reportConfig.employeeName}{" "}
-                    )&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    ( {reportConfig.employeeName} )
                   </div>
                   <div className="sign-name">{reportConfig.designation},</div>
                   {reportConfig.officeName && (
                     <div className="sign-office">
-                      {reportConfig.officeName}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      {reportConfig.officeName}
                     </div>
                   )}
                   {reportConfig.officeLocation && (
                     <div className="sign-location">
                       {reportConfig.officeLocation}
-                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     </div>
                   )}
                 </div>
@@ -1846,9 +1699,8 @@ const Dairy = ({ showToast }) => {
         )}
       </AnimatePresence>
 
-      {/* ========== STYLES ========== */}
+      {/* STYLES */}
       <style>{`
-        /* ========== CSS VARIABLES - PASTEL PALETTE ========== */
         :root {
           --purple-100: #f3e8ff;
           --purple-200: #e9d5ff;
@@ -1856,27 +1708,16 @@ const Dairy = ({ showToast }) => {
           --purple-400: #c084fc;
           --purple-500: #a855f7;
           --purple-600: #9333ea;
-          
           --pink-100: #fce7f3;
-          --pink-200: #fbcfe8;
-          --pink-300: #f9a8d4;
           --pink-400: #f472b6;
-          
-          --blue-100: #dbeafe;
-          --blue-200: #bfdbfe;
-          --blue-300: #93c5fd;
           --blue-400: #60a5fa;
           --blue-500: #3b82f6;
-          
-          --green-200: #bbf7d0;
           --green-300: #86efac;
           --green-400: #4ade80;
-          
           --red-100: #fee2e2;
           --red-200: #fecaca;
           --red-300: #fca5a5;
           --red-400: #f87171;
-          
           --gray-50: #f9fafb;
           --gray-100: #f3f4f6;
           --gray-200: #e5e7eb;
@@ -1886,24 +1727,16 @@ const Dairy = ({ showToast }) => {
           --gray-700: #374151;
         }
 
-        /* ========== MAIN CONTAINER ========== */
+        * {
+          box-sizing: border-box;
+        }
+
         .dairy-container {
           padding: 1.25rem;
           max-width: 1300px;
           margin: 0 auto;
-          transition: all 0.3s ease;
         }
 
-        /* Sidebar state adjustments */
-        .main-content:not(.sidebar-collapsed) .dairy-container {
-          max-width: calc(100vw - 280px - 4rem);
-        }
-
-        .main-content.sidebar-collapsed .dairy-container {
-          max-width: calc(100vw - 80px - 4rem);
-        }
-
-        /* ========== HEADER SECTION ========== */
         .dairy-header {
           display: flex;
           justify-content: space-between;
@@ -1927,6 +1760,7 @@ const Dairy = ({ showToast }) => {
         .dairy-header-left p {
           margin: 0.15rem 0 0;
           color: var(--gray-500);
+          font-size: 0.9rem;
         }
 
         .dairy-header-actions {
@@ -1934,7 +1768,6 @@ const Dairy = ({ showToast }) => {
           gap: 0.6rem;
         }
 
-        /* ========== BUTTONS ========== */
         .btn-add-dairy,
         .btn-report {
           display: flex;
@@ -1947,6 +1780,7 @@ const Dairy = ({ showToast }) => {
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
+          font-size: 0.95rem;
         }
 
         .btn-add-dairy {
@@ -1969,7 +1803,6 @@ const Dairy = ({ showToast }) => {
           box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
         }
 
-        /* ========== LOADING & EMPTY STATES ========== */
         .dairy-loading,
         .dairy-empty {
           display: flex;
@@ -1992,26 +1825,24 @@ const Dairy = ({ showToast }) => {
         }
 
         @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
+          to { transform: rotate(360deg); }
         }
 
         .dairy-empty h3 {
           margin: 1rem 0 0.5rem;
           color: var(--gray-500);
+          font-size: 1.2rem;
         }
 
         .dairy-empty p {
           color: var(--gray-500);
-          margin: 0.25rem 0;
+          margin: 0.25rem 0 1.5rem;
         }
 
         .btn-empty-dairy {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          margin-top: 1rem;
           padding: 0.75rem 1.5rem;
           background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
           color: white;
@@ -2027,17 +1858,17 @@ const Dairy = ({ showToast }) => {
           box-shadow: 0 6px 16px rgba(168, 85, 247, 0.35);
         }
 
-        /* ========== ENTRIES TABLE ========== */
         .dairy-table-container {
           background: #fff;
           border-radius: 12px;
           box-shadow: 0 2px 10px rgba(168, 85, 247, 0.1);
-          overflow: hidden;
+          overflow-x: auto;
         }
 
         .dairy-table {
           width: 100%;
           border-collapse: collapse;
+          min-width: 900px;
         }
 
         .dairy-table thead {
@@ -2051,6 +1882,7 @@ const Dairy = ({ showToast }) => {
           text-transform: uppercase;
           letter-spacing: 0.04em;
           color: #fff;
+          font-weight: 700;
         }
 
         .dairy-table td {
@@ -2095,8 +1927,11 @@ const Dairy = ({ showToast }) => {
           font-size: 0.88rem;
         }
 
-        /* ========== ENTRY OPTIONS MODAL ========== */
-        .entry-options-backdrop {
+        /* MODALS */
+        .entry-options-backdrop,
+        .delete-confirm-backdrop,
+        .dairy-modal-backdrop,
+        .report-modal-backdrop {
           position: fixed;
           inset: 0;
           background: rgba(0, 0, 0, 0.4);
@@ -2108,7 +1943,20 @@ const Dairy = ({ showToast }) => {
           padding: 1rem;
         }
 
-        .entry-options-modal {
+        .delete-confirm-backdrop {
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 7000;
+        }
+
+        .dairy-modal-backdrop,
+        .report-modal-backdrop {
+          z-index: 5000;
+        }
+
+        .entry-options-modal,
+        .delete-confirm-modal,
+        .dairy-modal-content,
+        .report-modal-content {
           background: #fff;
           border-radius: 16px;
           max-width: 500px;
@@ -2116,22 +1964,52 @@ const Dairy = ({ showToast }) => {
           box-shadow: 0 22px 60px rgba(168, 85, 247, 0.25);
         }
 
-        .entry-options-header {
+        .dairy-modal-content {
+          max-width: 700px;
+          max-height: 92vh;
+          overflow: auto;
+        }
+
+        .report-modal-content {
+          max-width: 950px;
+          width: 95%;
+          max-height: 92vh;
+          overflow: auto;
+        }
+
+        .delete-confirm-modal {
+          max-width: 480px;
+          border-radius: 20px;
+        }
+
+        .entry-options-header,
+        .dairy-modal-header,
+        .report-modal-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 1rem 1.25rem;
           border-bottom: 2px solid var(--purple-100);
           background: linear-gradient(135deg, var(--purple-50), var(--pink-100));
+          position: sticky;
+          top: 0;
+          z-index: 10;
         }
 
-        .entry-options-header h3 {
+        .entry-options-header h3,
+        .dairy-modal-header h3,
+        .report-modal-header h3 {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
           margin: 0;
           font-size: 1.15rem;
           color: var(--gray-700);
         }
 
-        .btn-close-options {
+        .btn-close-options,
+        .btn-close-modal,
+        .btn-close-report {
           background: var(--purple-100);
           border: none;
           border-radius: 8px;
@@ -2144,12 +2022,13 @@ const Dairy = ({ showToast }) => {
           justify-content: center;
         }
 
-        .btn-close-options:hover {
+        .btn-close-options:hover,
+        .btn-close-modal:hover,
+        .btn-close-report:hover {
           background: var(--purple-200);
           color: var(--purple-700);
         }
 
-        /* Entry details display */
         .entry-details {
           padding: 1.25rem;
         }
@@ -2175,9 +2054,9 @@ const Dairy = ({ showToast }) => {
           font-weight: 500;
           color: var(--gray-700);
           text-align: right;
+          word-break: break-word;
         }
 
-        /* Entry action buttons */
         .entry-options-actions {
           display: flex;
           gap: 0.75rem;
@@ -2186,20 +2065,24 @@ const Dairy = ({ showToast }) => {
           background: var(--gray-50);
         }
 
-        .btn-edit-entry {
+        .btn-edit-entry,
+        .btn-delete-entry-modal {
           flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
           padding: 0.75rem;
-          background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
           color: white;
           border: none;
           border-radius: 10px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
+        }
+
+        .btn-edit-entry {
+          background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
         }
 
         .btn-edit-entry:hover {
@@ -2208,19 +2091,7 @@ const Dairy = ({ showToast }) => {
         }
 
         .btn-delete-entry-modal {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          padding: 0.75rem;
           background: linear-gradient(135deg, var(--red-300), var(--red-400));
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
         }
 
         .btn-delete-entry-modal:hover {
@@ -2228,28 +2099,7 @@ const Dairy = ({ showToast }) => {
           box-shadow: 0 6px 16px rgba(248, 113, 113, 0.35);
         }
 
-        /* ========== DELETE CONFIRMATION MODAL ========== */
-        .delete-confirm-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(4px);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 7000;
-          padding: 1rem;
-        }
-
-        .delete-confirm-modal {
-          background: #fff;
-          border-radius: 20px;
-          max-width: 480px;
-          width: 100%;
-          box-shadow: 0 25px 70px rgba(248, 113, 113, 0.3);
-          overflow: hidden;
-        }
-
+        /* DELETE MODAL */
         .delete-icon-container {
           display: flex;
           justify-content: center;
@@ -2371,227 +2221,7 @@ const Dairy = ({ showToast }) => {
           box-shadow: 0 6px 20px rgba(248, 113, 113, 0.4);
         }
 
-        .btn-confirm-delete:active {
-          transform: translateY(0);
-        }
-
-        /* ========== ADD/EDIT MODALS ========== */
-        .dairy-modal-backdrop,
-        .report-modal-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(4px);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 5000;
-          padding: 1rem;
-        }
-
-        .dairy-modal-content {
-          background: #fff;
-          border-radius: 16px;
-          max-width: 700px;
-          width: 100%;
-          max-height: 92vh;
-          overflow: auto;
-          box-shadow: 0 22px 60px rgba(168, 85, 247, 0.2);
-        }
-
-        .report-modal-content {
-          background: #fff;
-          border-radius: 16px;
-          width: 95%;
-          max-width: 950px;
-          max-height: 92vh;
-          overflow: auto;
-          box-shadow: 0 22px 60px rgba(168, 85, 247, 0.2);
-        }
-
-        .compact-report {
-          max-width: 900px;
-        }
-
-        .dairy-modal-header,
-        .report-modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.25rem;
-          border-bottom: 2px solid var(--purple-100);
-          background: linear-gradient(135deg, var(--purple-50), var(--pink-100));
-          position: sticky;
-          top: 0;
-          z-index: 10;
-        }
-
-        .dairy-modal-header h3,
-        .report-modal-header h3 {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-          margin: 0;
-          font-size: 1.15rem;
-          color: var(--gray-700);
-        }
-
-        .btn-close-modal,
-        .btn-close-report {
-          background: var(--purple-100);
-          border: none;
-          border-radius: 8px;
-          padding: 0.5rem;
-          cursor: pointer;
-          color: var(--purple-600);
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .btn-close-modal:hover,
-        .btn-close-report:hover {
-          background: var(--purple-200);
-          color: var(--purple-700);
-        }
-
-        /* ========== REPORT CONTROLS ========== */
-        .report-controls {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .report-controls input[type="month"] {
-          padding: 0.45rem 0.6rem;
-          border: 1px solid var(--purple-200);
-          border-radius: 8px;
-          font-size: 0.9rem;
-        }
-
-        .btn-print,
-        .btn-download,
-        .btn-edit-config {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          padding: 0.5rem 0.8rem;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          color: #fff;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-edit-config {
-          background: linear-gradient(135deg, var(--purple-400), var(--purple-500));
-        }
-
-        .btn-edit-config:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
-        }
-
-        .btn-print {
-          background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
-        }
-
-        .btn-print:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
-        }
-
-        .btn-download {
-          background: linear-gradient(135deg, var(--green-300), var(--green-400));
-        }
-
-        .btn-download:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(74, 222, 128, 0.35);
-        }
-
-        /* ========== CONFIGURATION PANEL ========== */
-        .config-panel {
-          padding: 1.25rem;
-          background: var(--gray-50);
-          border-bottom: 2px solid var(--purple-100);
-          max-height: 60vh;
-          overflow-y: auto;
-        }
-
-        .config-panel h4 {
-          margin: 0 0 1rem;
-          color: var(--gray-700);
-          font-size: 1.1rem;
-        }
-
-        .config-section {
-          margin-bottom: 1.5rem;
-        }
-
-        .config-section h5 {
-          margin: 0 0 0.75rem;
-          color: var(--purple-600);
-          font-size: 0.95rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .config-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 0.75rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .config-field label {
-          display: block;
-          margin-bottom: 0.35rem;
-          font-weight: 600;
-          font-size: 0.85rem;
-          color: var(--gray-600);
-        }
-
-        .config-field input {
-          width: 100%;
-          padding: 0.5rem;
-          border: 1px solid var(--purple-200);
-          border-radius: 6px;
-          font-size: 0.9rem;
-          transition: all 0.2s ease;
-        }
-
-        .config-field input:focus {
-          outline: none;
-          border-color: var(--purple-400);
-          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
-        }
-
-        .btn-save-config {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          padding: 0.6rem 1.2rem;
-          background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          margin-top: 1rem;
-        }
-
-        .btn-save-config:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
-        }
-
-        /* ========== FORM STYLES ========== */
+        /* FORM */
         .dairy-form {
           padding: 1rem 1.25rem;
         }
@@ -2626,8 +2256,9 @@ const Dairy = ({ showToast }) => {
           color: var(--red-400);
         }
 
-        .form-group input,
-        .form-group select,
+        .form-input,
+        .time-select,
+        .time-period,
         .remark-textarea {
           padding: 0.7rem;
           border: 1px solid var(--purple-200);
@@ -2635,23 +2266,22 @@ const Dairy = ({ showToast }) => {
           font-size: 0.95rem;
           transition: all 0.2s ease;
           font-family: inherit;
+          width: 100%;
         }
 
-        .remark-textarea {
-          resize: vertical;
-          min-height: 70px;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
+        .form-input:focus,
+        .time-select:focus,
+        .time-period:focus,
         .remark-textarea:focus {
           outline: none;
           border-color: var(--purple-400);
           box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
-        .form-group .error {
+        .form-input.error,
+        .time-select.error {
           border-color: var(--red-400);
+          background: #fff5f5;
         }
 
         .error-text {
@@ -2660,7 +2290,11 @@ const Dairy = ({ showToast }) => {
           margin-top: 0.25rem;
         }
 
-        /* ========== TIME INPUT ========== */
+        .remark-textarea {
+          resize: vertical;
+          min-height: 70px;
+        }
+
         .time-input-group {
           display: flex;
           align-items: center;
@@ -2669,23 +2303,7 @@ const Dairy = ({ showToast }) => {
 
         .time-select {
           flex: 1;
-          padding: 0.7rem 0.5rem;
-          border: 1px solid var(--purple-200);
-          border-radius: 8px;
-          font-size: 0.95rem;
-          background: white;
           cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .time-select:focus {
-          outline: none;
-          border-color: var(--purple-400);
-          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
-        }
-
-        .time-select.error {
-          border-color: var(--red-400);
         }
 
         .time-separator {
@@ -2696,22 +2314,10 @@ const Dairy = ({ showToast }) => {
 
         .time-period {
           flex: 0.8;
-          padding: 0.7rem 0.5rem;
-          border: 1px solid var(--purple-200);
-          border-radius: 8px;
-          font-size: 0.95rem;
           background: linear-gradient(135deg, var(--purple-50), var(--pink-100));
           cursor: pointer;
-          transition: all 0.2s ease;
         }
 
-        .time-period:focus {
-          outline: none;
-          border-color: var(--purple-400);
-          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
-        }
-
-        /* ========== MODAL FOOTER ========== */
         .dairy-modal-footer {
           display: flex;
           justify-content: flex-end;
@@ -2759,10 +2365,133 @@ const Dairy = ({ showToast }) => {
           box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
         }
 
-        /* ========== REPORT CONTENT (PRINTABLE) ========== */
+        /* REPORT */
+        .report-controls {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .report-controls input[type="month"] {
+          padding: 0.45rem 0.6rem;
+          border: 1px solid var(--purple-200);
+          border-radius: 8px;
+          font-size: 0.9rem;
+        }
+
+        .btn-print,
+        .btn-download,
+        .btn-edit-config {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.5rem 0.8rem;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          color: #fff;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-size: 0.9rem;
+        }
+
+        .btn-edit-config {
+          background: linear-gradient(135deg, var(--purple-400), var(--purple-500));
+        }
+
+        .btn-print {
+          background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
+        }
+
+        .btn-download {
+          background: linear-gradient(135deg, var(--green-300), var(--green-400));
+        }
+
+        .btn-edit-config:hover,
+        .btn-print:hover,
+        .btn-download:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .config-panel {
+          padding: 1.25rem;
+          background: var(--gray-50);
+          border-bottom: 2px solid var(--purple-100);
+          max-height: 60vh;
+          overflow-y: auto;
+        }
+
+        .config-panel h4 {
+          margin: 0 0 1rem;
+          color: var(--gray-700);
+          font-size: 1.1rem;
+        }
+
+        .config-section {
+          margin-bottom: 1.5rem;
+        }
+
+        .config-section h5 {
+          margin: 0 0 0.75rem;
+          color: var(--purple-600);
+          font-size: 0.95rem;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+
+        .config-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 0.75rem;
+        }
+
+        .config-field label {
+          display: block;
+          margin-bottom: 0.35rem;
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: var(--gray-600);
+        }
+
+        .config-field input {
+          width: 100%;
+          padding: 0.5rem;
+          border: 1px solid var(--purple-200);
+          border-radius: 6px;
+          font-size: 0.9rem;
+        }
+
+        .config-field input:focus {
+          outline: none;
+          border-color: var(--purple-400);
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+        }
+
+        .btn-save-config {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.6rem 1.2rem;
+          background: linear-gradient(135deg, var(--purple-400), var(--pink-400));
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          margin-top: 1rem;
+        }
+
+        .btn-save-config:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(168, 85, 247, 0.35);
+        }
+
         .report-content {
-          padding: 0.5cm 0.5cm;
-          font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", "Noto Sans", "Hind", "Mangal", Arial, sans-serif;
+          padding: 0.5cm;
+          font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
         }
 
         .gov-header {
@@ -2788,7 +2517,6 @@ const Dairy = ({ showToast }) => {
           font-weight: 500;
         }
 
-        /* ========== REPORT TABLE ========== */
         .gov-table {
           width: 100%;
           border-collapse: collapse;
@@ -2821,20 +2549,17 @@ const Dairy = ({ showToast }) => {
 
         .time-cell {
           font-size: 0.72rem;
-          line-height: 1.1;
         }
 
         .shera-cell {
           min-width: 90px;
           word-wrap: break-word;
-          font-size: 0.75rem;
         }
 
         .text-right {
           text-align: right;
         }
 
-        /* ========== GOSAVARA BOX ========== */
         .gosavara-box {
           margin-top: 0.35cm;
         }
@@ -2862,7 +2587,6 @@ const Dairy = ({ showToast }) => {
           border-bottom: none;
         }
 
-        /* ========== SIGNATURE SECTION ========== */
         .sign-section {
           margin-top: 0.6cm;
           display: flex;
@@ -2873,26 +2597,14 @@ const Dairy = ({ showToast }) => {
           font-size: 0.88rem;
         }
 
-        .sign-name {
+        .sign-name,
+        .sign-office,
+        .sign-location {
           font-size: 0.9rem;
           font-weight: 500;
         }
 
-        .sign-designation {
-          font-size: 0.88rem;
-          font-weight: 500;
-          text-align: center;
-          align-self: center;
-          margin-top: 0.05cm;
-        }
-
-        .sign-office,
-        .sign-location {
-          font-size: 0.85rem;
-          margin-top: 0.08cm;
-        }
-
-        /* ========== PRINT STYLES ========== */
+        /* PRINT */
         @media print {
           body * {
             visibility: hidden;
@@ -2919,230 +2631,31 @@ const Dairy = ({ showToast }) => {
             size: A4;
             margin: 0.8cm;
           }
-
-          .gov-header {
-            margin-bottom: 0.25cm;
-          }
-
-          .gov-header .line-center {
-            margin: 0.03rem 0;
-            font-size: 0.85rem;
-          }
-
-          .gov-header .title {
-            font-size: 1rem;
-            margin: 0.08rem 0;
-          }
-
-          .gov-header .report-subtitle {
-            font-size: 0.85rem;
-            margin: 0.05rem 0;
-          }
-
-          .gov-table {
-            font-size: 9px;
-            margin-bottom: 0.3cm;
-          }
-
-          .gov-table th,
-          .gov-table td {
-            padding: 0.15rem 0.22rem;
-          }
-
-          .time-cell {
-            font-size: 8px;
-          }
-
-          .shera-cell {
-            font-size: 8px;
-          }
-
-          .gosavara-box {
-            margin-top: 0.3cm;
-            break-inside: avoid;
-          }
-
-          .gosavara-inner {
-            width: 8.5cm;
-            padding: 0.2cm 0.25cm;
-          }
-
-          .gos-title {
-            font-size: 0.85rem;
-            margin-bottom: 0.1cm;
-          }
-
-          .gos-lines > div {
-            padding: 0.04cm 0;
-            font-size: 0.78rem;
-          }
-
-          .sign-section {
-            margin-top: 0.5cm;
-            break-inside: avoid;
-          }
-
-          .sign-name {
-            font-size: 0.88rem;
-          }
-
-          .sign-designation {
-            font-size: 0.85rem;
-          }
-
-          .sign-office,
-          .sign-location {
-            font-size: 0.82rem;
-          }
         }
 
-        /* ========== RESPONSIVE STYLES ========== */
-        
-        /* Large Tablet & Desktop (1024px+) - Sidebar-aware */
-        @media (min-width: 1024px) {
-          .dairy-container {
-            max-width: 1400px;
-          }
-
-          /* Adjust for sidebar expanded state */
-          .main-content:not(.sidebar-collapsed) .dairy-container {
-            max-width: calc(100vw - 280px - 4rem);
-          }
-
-          /* Adjust for sidebar collapsed state */
-          .main-content.sidebar-collapsed .dairy-container {
-            max-width: calc(100vw - 80px - 4rem);
-          }
-          
-          .dairy-table th,
-          .dairy-table td {
-            padding: 1rem 0.85rem;
-          }
-        }
-        
-        /* Tablet Portrait (768px - 1023px) - Sidebar-aware */
-        @media (max-width: 1023px) {
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
           .dairy-container {
             padding: 1rem;
           }
 
-          /* On tablets 768px+, adjust for sidebar states */
-          @media (min-width: 768px) {
-            .main-content:not(.sidebar-collapsed) .dairy-container {
-              max-width: calc(100vw - 280px - 3rem);
-            }
-
-            .main-content.sidebar-collapsed .dairy-container {
-              max-width: calc(100vw - 80px - 3rem);
-            }
-          }
-          
-          .dairy-header {
-            flex-wrap: wrap;
-          }
-          
-          .dairy-header-actions {
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.6rem;
-          }
-          
-          .dairy-table-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-          
-          .dairy-table {
-            min-width: 900px;
-          }
-          
-          .dairy-modal-content {
-            max-width: 90%;
-          }
-          
-          .form-row {
-            grid-template-columns: repeat(2, 1fr);
-          }
-          
-          .report-controls {
-            flex-wrap: wrap;
-            gap: 0.5rem;
-          }
-        }
-
-        /* Mobile Landscape & Large Phone (600px - 767px) - No sidebar margin */
-        @media (max-width: 767px) {
-          /* Reset container for mobile - ignore sidebar */
-          .main-content .dairy-container,
-          .main-content.sidebar-collapsed .dairy-container,
-          .main-content:not(.sidebar-collapsed) .dairy-container {
-            margin-left: 0 !important;
-            max-width: 100% !important;
-            padding: 0.85rem;
-          }
-
-          .dairy-container {
-            padding: 0.85rem;
-          }
-          
           .dairy-header {
             flex-direction: column;
             align-items: flex-start;
             gap: 1rem;
           }
 
-          .dairy-header-left h2 {
-            font-size: 1.4rem;
-          }
-
-          .dairy-header-left p {
-            font-size: 0.875rem;
-          }
-
           .dairy-header-actions {
             width: 100%;
             grid-template-columns: 1fr;
           }
 
-          .btn-add-dairy,
-          .btn-report {
-            width: 100%;
-            justify-content: center;
-            padding: 0.7rem 1rem;
-          }
-
           .dairy-table-container {
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-          
-          .dairy-table {
-            min-width: 850px;
-          }
-          
-          .dairy-table th,
-          .dairy-table td {
-            padding: 0.75rem 0.6rem;
-            font-size: 0.875rem;
-          }
-          
-          .dairy-table th {
-            font-size: 0.8rem;
           }
 
           .form-row {
             grid-template-columns: 1fr;
-          }
-
-          .time-input-group {
-            gap: 0.3rem;
-          }
-          
-          .time-select,
-          .time-period {
-            font-size: 0.9rem;
-            padding: 0.65rem 0.45rem;
           }
 
           .report-controls {
@@ -3156,299 +2669,55 @@ const Dairy = ({ showToast }) => {
           .btn-edit-config,
           .btn-close-report {
             width: 100%;
-            justify-content: center;
           }
 
           .config-grid {
             grid-template-columns: 1fr;
           }
 
-          .report-modal-content {
-            width: 95vw;
-            max-width: 95%;
-          }
-
-          .entry-options-actions {
-            flex-direction: column;
-          }
-
-          .btn-edit-entry,
-          .btn-delete-entry-modal {
-            width: 100%;
-          }
-
+          .entry-options-actions,
           .delete-actions {
             flex-direction: column;
           }
 
+          .dairy-modal-footer {
+            flex-direction: column;
+          }
+
+          .btn-cancel,
+          .btn-save,
+          .btn-edit-entry,
+          .btn-delete-entry-modal,
           .btn-cancel-delete,
           .btn-confirm-delete {
             width: 100%;
           }
-          
-          .delete-confirm-modal {
-            max-width: 90%;
-          }
-          
-          .entry-options-modal {
-            max-width: 90%;
-          }
-          
-          .dairy-modal-content {
-            max-width: 95%;
-            max-height: 90vh;
-          }
         }
-        
-        /* Mobile Portrait (480px - 599px) */
-        @media (max-width: 599px) {
-          .dairy-container {
-            padding: 0.75rem;
-          }
-          
+
+        @media (max-width: 480px) {
           .dairy-header-left h2 {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
           }
-          
-          .dairy-header-left p {
-            font-size: 0.85rem;
-          }
-          
+
           .btn-add-dairy,
           .btn-report {
-            padding: 0.65rem 0.85rem;
             font-size: 0.9rem;
+            padding: 0.65rem 0.85rem;
           }
-          
+
           .dairy-table {
-            min-width: 750px;
             font-size: 0.85rem;
           }
-          
-          .dairy-table th,
-          .dairy-table td {
-            padding: 0.65rem 0.5rem;
-            font-size: 0.825rem;
-          }
-          
-          .dairy-table th {
-            font-size: 0.75rem;
-          }
-          
-          .dairy-modal-header h3 {
-            font-size: 1.05rem;
-          }
-          
+
           .form-group label {
             font-size: 0.85rem;
           }
-          
-          .form-group input,
-          .form-group select,
+
+          .form-input,
+          .time-select,
+          .time-period,
           .remark-textarea {
-            font-size: 16px; /* Prevents zoom on iOS */
-            padding: 0.65rem 0.85rem;
-          }
-          
-          .dairy-modal-footer {
-            padding: 0.85rem 1rem;
-            flex-direction: column;
-          }
-          
-          .btn-cancel,
-          .btn-save {
-            width: 100%;
-            padding: 0.7rem 1rem;
-          }
-          
-          .delete-icon-circle {
-            width: 80px;
-            height: 80px;
-            font-size: 1.5rem;
-          }
-          
-          .delete-content h3 {
-            font-size: 1.3rem;
-          }
-          
-          .delete-content p {
-            font-size: 0.9rem;
-          }
-          
-          .config-panel {
-            padding: 1rem;
-            max-height: 55vh;
-          }
-          
-          .config-field input {
-            font-size: 16px; /* Prevents zoom on iOS */
-          }
-          
-          .report-modal-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
-          }
-          
-          .report-modal-header h3 {
-            font-size: 1.05rem;
-          }
-        }
-        
-        /* Small Mobile (< 480px) */
-        @media (max-width: 479px) {
-          .dairy-container {
-            padding: 0.6rem;
-          }
-          
-          .dairy-header-left h2 {
-            font-size: 1.15rem;
-            gap: 0.5rem;
-          }
-          
-          .dairy-header-left p {
-            font-size: 0.8rem;
-          }
-          
-          .btn-add-dairy,
-          .btn-report {
-            padding: 0.6rem 0.75rem;
-            font-size: 0.875rem;
-            gap: 0.4rem;
-          }
-          
-          .dairy-table {
-            min-width: 700px;
-          }
-          
-          .dairy-modal-content {
-            margin: 0.5rem;
-            max-width: calc(100% - 1rem);
-          }
-          
-          .dairy-modal-header,
-          .report-modal-header {
-            padding: 0.85rem 1rem;
-          }
-          
-          .dairy-form {
-            padding: 0.85rem 1rem;
-          }
-          
-          .form-group {
-            margin-bottom: 1rem;
-          }
-          
-          .time-input-group {
-            gap: 0.25rem;
-          }
-          
-          .time-select,
-          .time-period {
-            padding: 0.6rem 0.4rem;
-            font-size: 0.875rem;
-          }
-          
-          .delete-icon-circle {
-            width: 70px;
-            height: 70px;
-          }
-          
-          .delete-content {
-            padding: 1.25rem;
-          }
-          
-          .delete-actions {
-            padding: 1rem 1.25rem;
-          }
-          
-          .entry-options-modal,
-          .delete-confirm-modal {
-            max-width: 95%;
-            margin: 0.5rem;
-          }
-          
-          .entry-options-header,
-          .entry-details {
-            padding: 1rem;
-          }
-          
-          .entry-options-actions {
-            padding: 1rem;
-            gap: 0.6rem;
-          }
-          
-          .config-panel {
-            padding: 0.85rem;
-          }
-          
-          .config-panel h4 {
-            font-size: 1rem;
-          }
-          
-          .config-section h5 {
-            font-size: 0.875rem;
-          }
-          
-          .report-content {
-            padding: 0.3cm 0.3cm;
-          }
-          
-          .gov-header .line-center,
-          .gov-header .report-subtitle {
-            font-size: 0.8rem;
-          }
-          
-          .gov-header .title {
-            font-size: 0.95rem;
-          }
-          
-          .gov-table {
-            font-size: 0.7rem;
-          }
-        }
-        
-        /* Extra Small Mobile (< 360px) */
-        @media (max-width: 359px) {
-          .dairy-header-left h2 {
-            font-size: 1.05rem;
-          }
-          
-          .dairy-modal-content {
-            margin: 0.25rem;
-          }
-          
-          .form-group input,
-          .form-group select {
-            padding: 0.6rem 0.75rem;
-          }
-          
-          .dairy-table {
-            min-width: 650px;
-          }
-          
-          .config-field input {
-            padding: 0.45rem 0.6rem;
-            font-size: 0.875rem;
-          }
-        }
-        
-        /* Touch device improvements */
-        @media (hover: none) and (pointer: coarse) {
-          .clickable-row {
-            -webkit-tap-highlight-color: rgba(168, 85, 247, 0.1);
-          }
-          
-          .btn-add-dairy,
-          .btn-report,
-          .btn-save,
-          .btn-cancel {
-            min-height: 44px; /* Touch target size */
-          }
-          
-          .time-select,
-          .time-period {
-            min-height: 44px;
+            font-size: 16px; /* Prevents iOS zoom */
           }
         }
       `}</style>

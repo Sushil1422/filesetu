@@ -293,14 +293,14 @@ a {
 
 .line-clamp-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .line-clamp-3 {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+ 
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -2038,6 +2038,439 @@ a:focus-visible {
   }
 }
 
+/* ============================================================
+   DOCUMENT VIEWER MODAL STYLES
+   ============================================================ */
+
+.document-viewer-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 1rem;
+}
+
+.viewer-modal-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow-2xl);
+  max-width: 1400px;
+  width: 100%;
+  max-height: 95vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--gray-200);
+  background: linear-gradient(135deg, var(--purple-50), var(--pink-50));
+}
+
+.viewer-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.viewer-file-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.viewer-title-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.viewer-title-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  color: var(--gray-800);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewer-filename {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewer-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 1rem;
+}
+
+.zoom-btn {
+  background: var(--purple-100);
+  border: none;
+  color: var(--purple-600);
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: var(--purple-200);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-level {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  min-width: 60px;
+  text-align: center;
+}
+
+.viewer-close-btn {
+  background: var(--purple-100);
+  border: none;
+  color: var(--purple-600);
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.viewer-close-btn:hover {
+  background: var(--purple-200);
+  transform: scale(1.1);
+}
+
+.viewer-content-area {
+  flex: 1;
+  overflow: auto;
+  background: var(--gray-50);
+  position: relative;
+}
+
+.viewer-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 10;
+}
+
+.viewer-loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.viewer-loading-spinner .spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--purple-200);
+  border-top-color: var(--purple-600);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+.viewer-loading-spinner p {
+  color: var(--gray-600);
+  margin: 0;
+}
+
+.viewer-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 1rem;
+  overflow: auto;
+}
+
+.viewer-image-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+}
+
+.viewer-pdf-container,
+.viewer-text-container {
+  width: 100%;
+  height: 70vh;
+  padding: 1rem;
+}
+
+.viewer-pdf-container iframe,
+.viewer-text-container iframe {
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--gray-200);
+  border-radius: 8px;
+}
+
+.viewer-not-supported {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.viewer-not-supported-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.viewer-not-supported h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--gray-800);
+}
+
+.viewer-not-supported p {
+  margin: 0 0 1.5rem 0;
+  color: var(--gray-600);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.viewer-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--purple-600), var(--pink-600));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+}
+
+.viewer-download-btn:hover {
+  background: linear-gradient(135deg, var(--purple-700), var(--pink-700));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.viewer-mobile-controls {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-top: 1px solid var(--gray-200);
+  background: white;
+}
+
+/* ============================================================
+   RESPONSIVE VIEWER STYLES
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .viewer-zoom-controls {
+    display: none;
+  }
+
+  .viewer-mobile-controls {
+    display: flex;
+  }
+
+  .viewer-header {
+    padding: 1rem;
+  }
+
+  .viewer-file-icon {
+    font-size: 2rem;
+  }
+
+  .viewer-title-info h3 {
+    font-size: 1rem;
+  }
+
+  .viewer-filename {
+    font-size: 0.75rem;
+  }
+
+  .viewer-image-container {
+    padding: 0.5rem;
+  }
+
+  .viewer-pdf-container,
+  .viewer-text-container {
+    height: 60vh;
+    padding: 0.5rem;
+  }
+
+  .viewer-not-supported {
+    padding: 1.5rem;
+  }
+
+  .viewer-not-supported-icon {
+    font-size: 3rem;
+  }
+
+  .viewer-not-supported h3 {
+    font-size: 1.25rem;
+  }
+
+  .zoom-btn {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .document-viewer-modal {
+    padding: 0.5rem;
+  }
+
+  .viewer-modal-container {
+    max-height: 98vh;
+  }
+
+  .viewer-header {
+    padding: 0.75rem;
+  }
+
+  .viewer-file-icon {
+    font-size: 1.75rem;
+  }
+
+  .viewer-title-section {
+    gap: 0.75rem;
+  }
+
+  .viewer-close-btn {
+    padding: 0.4rem;
+  }
+}
+
+/* ============================================================
+   DOWNLOAD ENHANCEMENT STYLES
+   ============================================================ */
+
+.download-progress-toast {
+  position: fixed;
+  bottom: 6rem;
+  right: 1.5rem;
+  background: white;
+  border: 2px solid var(--blue-300);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  box-shadow: var(--shadow-xl);
+  z-index: 10000;
+  min-width: 280px;
+}
+
+.download-progress-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.download-progress-icon {
+  color: var(--blue-600);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.download-progress-text {
+  flex: 1;
+}
+
+.download-progress-text h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  color: var(--gray-800);
+  font-weight: 600;
+}
+
+.download-progress-text p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gray-600);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================================ */
+
+.viewer-close-btn:focus-visible,
+.zoom-btn:focus-visible,
+.viewer-download-btn:focus-visible {
+  outline: 3px solid var(--purple-400);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   PRINT STYLES FOR VIEWER
+   ============================================================ */
+
+@media print {
+  .document-viewer-modal {
+    position: static;
+    background: white;
+  }
+
+  .viewer-header,
+  .viewer-mobile-controls,
+  .viewer-zoom-controls,
+  .viewer-close-btn {
+    display: none !important;
+  }
+
+  .viewer-content-area {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .viewer-image-container img {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+}
 /* ============================================================
    END OF DASHBOARD.CSS
    ============================================================ */

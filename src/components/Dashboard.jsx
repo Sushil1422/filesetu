@@ -1,4 +1,13 @@
 // ============================================================
+// DASHBOARD COMPONENT - MAIN APPLICATION INTERFACE
+// ============================================================
+// This component serves as the primary dashboard for managing
+// documents, files, diary entries, and user management.
+// Features: File upload/download, document portfolio, diary,
+// logbook, user management (admin), and responsive design.
+// ============================================================
+
+// ============================================================
 // IMPORTS
 // ============================================================
 import React, {
@@ -11,6 +20,8 @@ import React, {
 } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+
+// Firebase imports
 import {
   getDatabase,
   ref as dbRef,
@@ -26,14 +37,21 @@ import {
   uploadBytes,
   getDownloadURL,
   deleteObject,
+  getBlob,
 } from "firebase/storage";
+
+// Component imports
 import FileUpload from "./FileUpload";
 import FileRecordsList from "./RecordsView";
 import UserManagement from "./UserManagement";
 import Sidebar from "./Sidebar";
 import Dairy from "./Dairy";
 import LogBook from "./LogBook";
+
+// Animation library
 import { motion, AnimatePresence } from "framer-motion";
+
+// Icon imports
 import {
   Upload,
   Download,
@@ -55,15 +73,24 @@ import {
   BookOpen,
   Plus,
   Save,
-  ArrowLeft,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from "lucide-react";
 
 // ============================================================
 // TOAST NOTIFICATION SYSTEM
 // ============================================================
+// Provides global toast notifications for success, error,
+// warning, and info messages throughout the application
+// ============================================================
 
 const ToastContext = createContext();
 
+/**
+ * Custom hook to access toast notifications
+ * @throws {Error} If used outside ToastProvider
+ */
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
@@ -72,19 +99,26 @@ export const useToast = () => {
   return context;
 };
 
+/**
+ * Toast Provider Component
+ * Manages toast notification state and provides notification methods
+ */
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
+  // Remove a toast by ID
   const removeToast = useCallback((id) => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   }, []);
 
+  // Add a new toast notification
   const addToast = useCallback(
     (message, type = "info", duration = 3000) => {
       const id = Date.now();
       const newToast = { id, message, type, duration };
       setToasts((prevToasts) => [...prevToasts, newToast]);
 
+      // Auto-remove toast after duration
       if (duration > 0) {
         setTimeout(() => removeToast(id), duration);
       }
@@ -94,6 +128,7 @@ export const ToastProvider = ({ children }) => {
     [removeToast]
   );
 
+  // Memoized value to prevent unnecessary re-renders
   const value = useMemo(
     () => ({
       toasts,
@@ -115,6 +150,10 @@ export const ToastProvider = ({ children }) => {
   );
 };
 
+/**
+ * Toast Container Component
+ * Renders all active toast notifications
+ */
 const ToastContainer = () => {
   const { toasts, removeToast } = useToast();
 
@@ -134,6 +173,10 @@ const ToastContainer = () => {
   );
 };
 
+/**
+ * Individual Toast Component
+ * Displays a single notification with icon and message
+ */
 const Toast = ({ message, type, onClose }) => {
   const icons = {
     success: <CheckCircle size={20} />,
@@ -157,12 +200,15 @@ const Toast = ({ message, type, onClose }) => {
       className={`flex items-center justify-between px-5 py-4 rounded-xl shadow-lg backdrop-blur-sm min-w-[320px] text-white font-medium ${gradientClasses[type]}`}
     >
       <div className="flex items-center gap-3 flex-1">
-        <span className="flex-shrink-0 flex items-center justify-center">{icons[type]}</span>
+        <span className="flex-shrink-0 flex items-center justify-center">
+          {icons[type]}
+        </span>
         <span className="flex-1 text-[0.95rem] leading-snug">{message}</span>
       </div>
-      <button 
+      <button
         className="bg-white/20 hover:bg-white/30 border-none text-white cursor-pointer p-1.5 rounded-md flex items-center justify-center transition-all duration-150"
         onClick={onClose}
+        aria-label="Close notification"
       >
         <X size={16} />
       </button>
@@ -174,6 +220,10 @@ const Toast = ({ message, type, onClose }) => {
 // DIALOG COMPONENTS
 // ============================================================
 
+/**
+ * Confirmation Dialog Component
+ * Generic confirmation dialog for destructive actions
+ */
 const ConfirmationDialog = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
 
@@ -201,13 +251,13 @@ const ConfirmationDialog = ({ isOpen, onClose, onConfirm, title, message }) => {
             <p className="text-gray-600 leading-relaxed">{message}</p>
           </div>
           <div className="flex gap-3 justify-end">
-            <button 
+            <button
               className="px-6 py-2.5 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
               onClick={onClose}
             >
               Cancel
             </button>
-            <button 
+            <button
               className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-md"
               onClick={onConfirm}
             >
@@ -220,6 +270,10 @@ const ConfirmationDialog = ({ isOpen, onClose, onConfirm, title, message }) => {
   );
 };
 
+/**
+ * Logout Confirmation Dialog
+ * Specialized dialog for confirming logout action
+ */
 const LogoutConfirmDialog = ({ isOpen, onCancel, onConfirm }) => {
   if (!isOpen) return null;
 
@@ -254,13 +308,13 @@ const LogoutConfirmDialog = ({ isOpen, onCancel, onConfirm }) => {
             </div>
           </div>
           <div className="flex gap-3 justify-end">
-            <button 
+            <button
               className="px-6 py-2.5 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
               onClick={onCancel}
             >
               Cancel
             </button>
-            <button 
+            <button
               className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 transition-all shadow-md"
               onClick={onConfirm}
             >
@@ -274,9 +328,14 @@ const LogoutConfirmDialog = ({ isOpen, onCancel, onConfirm }) => {
 };
 
 // ============================================================
-// HELPER FUNCTIONS
+// UTILITY HELPER FUNCTIONS
 // ============================================================
 
+/**
+ * Get file icon based on file extension
+ * @param {string} fileName - Name of the file
+ * @returns {string} Emoji icon representing file type
+ */
 const getFileIcon = (fileName) => {
   const ext = fileName?.split(".").pop().toLowerCase();
   const iconMap = {
@@ -289,10 +348,17 @@ const getFileIcon = (fileName) => {
     jpg: "🖼️",
     jpeg: "🖼️",
     png: "🖼️",
+    gif: "🖼️",
+    bmp: "🖼️",
   };
   return iconMap[ext] || "📁";
 };
 
+/**
+ * Format file size from bytes to human-readable format
+ * @param {number} bytes - File size in bytes
+ * @returns {string} Formatted file size
+ */
 const formatFileSize = (bytes) => {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -301,8 +367,285 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
+/**
+ * Determine file type category
+ * @param {string} fileName - Name of the file
+ * @returns {string} File type category
+ */
+const getFileType = (fileName) => {
+  const ext = fileName?.split(".").pop().toLowerCase();
+  if (["jpg", "jpeg", "png", "gif", "bmp"].includes(ext)) return "image";
+  if (["pdf"].includes(ext)) return "pdf";
+  if (["doc", "docx"].includes(ext)) return "document";
+  if (["xls", "xlsx"].includes(ext)) return "spreadsheet";
+  if (["txt"].includes(ext)) return "text";
+  return "other";
+};
+
+/**
+ * Validate file before upload
+ * @param {File} file - File object to validate
+ * @returns {Object} Validation result with valid flag and error message
+ */
+const validateFile = (file) => {
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  const allowedTypes = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/plain",
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/bmp",
+  ];
+
+  if (file.size > maxSize) {
+    return { valid: false, error: "File size must be less than 10MB" };
+  }
+
+  if (!allowedTypes.includes(file.type)) {
+    return { valid: false, error: "File type not supported" };
+  }
+
+  return { valid: true };
+};
+
 // ============================================================
-// UPLOAD MODAL (TITLE ONLY)
+// DOCUMENT VIEWER MODAL
+// ============================================================
+// Displays document preview with zoom controls for images
+// Supports: Images (JPG, PNG, GIF), PDFs, Text files
+// ============================================================
+
+const DocumentViewerModal = ({ isOpen, onClose, document }) => {
+  const [zoom, setZoom] = useState(100);
+  const [loading, setLoading] = useState(true);
+
+  // Reset zoom and loading state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setZoom(100);
+      setLoading(true);
+    }
+  }, [isOpen, document]);
+
+  if (!isOpen || !document) return null;
+
+  const fileType = getFileType(document.fileName);
+
+  // Zoom control handlers
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 25, 200));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 25, 50));
+  const handleResetZoom = () => setZoom(100);
+
+  /**
+   * Render document content based on file type
+   */
+  const renderContent = () => {
+    switch (fileType) {
+      case "image":
+        return (
+          <div className="flex items-center justify-center min-h-[400px] p-4 overflow-auto">
+            <motion.img
+              src={document.fileURL}
+              alt={document.title}
+              style={{ width: `${zoom}%` }}
+              className="max-w-full h-auto rounded-lg shadow-lg"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onLoad={() => setLoading(false)}
+            />
+          </div>
+        );
+
+      case "pdf":
+        return (
+          <div className="w-full h-[70vh]">
+            <iframe
+              src={`${document.fileURL}#view=FitH`}
+              className="w-full h-full rounded-lg"
+              title={document.title}
+              onLoad={() => setLoading(false)}
+            />
+          </div>
+        );
+
+      case "text":
+        return (
+          <div className="p-6 max-h-[70vh] overflow-auto">
+            <iframe
+              src={document.fileURL}
+              className="w-full h-[500px] border-2 border-gray-200 rounded-lg"
+              title={document.title}
+              onLoad={() => setLoading(false)}
+            />
+          </div>
+        );
+
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-6">
+            <div className="text-6xl mb-4">{getFileIcon(document.fileName)}</div>
+            <h3 className="text-xl font-bold text-gray-800 text-center">
+              Preview not available
+            </h3>
+            <p className="text-gray-600 text-center max-w-md">
+              This file type cannot be previewed directly. Please download the
+              file to view it.
+            </p>
+            <a
+              href={document.fileURL}
+              download={document.fileName}
+              className="mt-4 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-md"
+            >
+              <Download size={20} />
+              Download File
+            </a>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1001] p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 md:p-6 border-b-2 border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="text-3xl md:text-4xl flex-shrink-0">
+                {getFileIcon(document.fileName)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg md:text-xl font-bold text-gray-800 truncate">
+                  {document.title}
+                </h3>
+                <p className="text-sm text-gray-600 truncate">
+                  {document.fileName}
+                </p>
+              </div>
+            </div>
+
+            {/* Zoom Controls - Desktop (only for images) */}
+            {fileType === "image" && (
+              <div className="hidden md:flex items-center gap-2 mx-4">
+                <button
+                  onClick={handleZoomOut}
+                  className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                  title="Zoom Out"
+                  disabled={zoom <= 50}
+                >
+                  <ZoomOut
+                    size={20}
+                    className={zoom <= 50 ? "text-gray-400" : "text-purple-600"}
+                  />
+                </button>
+                <span className="text-sm font-semibold text-gray-700 min-w-[60px] text-center">
+                  {zoom}%
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                  title="Zoom In"
+                  disabled={zoom >= 200}
+                >
+                  <ZoomIn
+                    size={20}
+                    className={zoom >= 200 ? "text-gray-400" : "text-purple-600"}
+                  />
+                </button>
+                <button
+                  onClick={handleResetZoom}
+                  className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                  title="Reset Zoom"
+                >
+                  <Maximize2 size={20} className="text-purple-600" />
+                </button>
+              </div>
+            )}
+
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-purple-100 rounded-lg transition-colors flex-shrink-0 ml-2"
+            >
+              <X size={24} className="text-gray-700" />
+            </button>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-auto bg-gray-50 relative">
+            {loading && fileType !== "other" && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-10">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                  <p className="text-gray-600 font-medium">Loading preview...</p>
+                  <p className="text-sm text-gray-500">{document.fileName}</p>
+                </div>
+              </div>
+            )}
+            {renderContent()}
+          </div>
+
+          {/* Footer - Mobile Zoom Controls */}
+          {fileType === "image" && (
+            <div className="md:hidden flex items-center justify-center gap-3 p-4 border-t border-gray-200 bg-white">
+              <button
+                onClick={handleZoomOut}
+                className="p-3 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
+                disabled={zoom <= 50}
+              >
+                <ZoomOut
+                  size={20}
+                  className={zoom <= 50 ? "text-gray-400" : "text-purple-600"}
+                />
+              </button>
+              <span className="text-sm font-semibold text-gray-700 min-w-[60px] text-center">
+                {zoom}%
+              </span>
+              <button
+                onClick={handleZoomIn}
+                className="p-3 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
+                disabled={zoom >= 200}
+              >
+                <ZoomIn
+                  size={20}
+                  className={zoom >= 200 ? "text-gray-400" : "text-purple-600"}
+                />
+              </button>
+              <button
+                onClick={handleResetZoom}
+                className="p-3 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
+              >
+                <Maximize2 size={20} className="text-purple-600" />
+              </button>
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+// ============================================================
+// DOCUMENT UPLOAD MODAL
+// ============================================================
+// Modal for uploading new documents with validation
 // ============================================================
 
 const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
@@ -312,6 +655,9 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
   });
   const [errors, setErrors] = useState({});
 
+  /**
+   * Handle input field changes
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -320,9 +666,19 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
     }
   };
 
+  /**
+   * Handle file selection with validation
+   */
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        setErrors({ ...errors, file: validation.error });
+        return;
+      }
+
       setFormData({ ...formData, file });
       if (errors.file) {
         setErrors({ ...errors, file: "" });
@@ -330,6 +686,9 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
     }
   };
 
+  /**
+   * Validate form before submission
+   */
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = "Title is required";
@@ -338,6 +697,9 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handle form submission
+   */
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
@@ -347,6 +709,9 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
     }
   };
 
+  /**
+   * Handle modal close and reset form
+   */
   const handleClose = () => {
     setFormData({ title: "", file: null });
     setErrors({});
@@ -371,11 +736,12 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Header */}
           <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
             <h3 className="text-xl md:text-2xl font-bold flex items-center gap-2">
               📤 <span>Upload Document</span>
             </h3>
-            <button 
+            <button
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               onClick={handleClose}
             >
@@ -383,9 +749,14 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
             </button>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4 md:space-y-5">
+            {/* Title Input */}
             <div>
-              <label htmlFor="title" className="block text-sm md:text-base font-semibold text-gray-700 mb-2">
+              <label
+                htmlFor="title"
+                className="block text-sm md:text-base font-semibold text-gray-700 mb-2"
+              >
                 Document Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -398,7 +769,11 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
                 className={`
                   w-full px-3 md:px-4 py-2.5 md:py-3
                   rounded-lg md:rounded-xl
-                  border-2 ${errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'}
+                  border-2 ${
+                    errors.title
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 focus:border-purple-500"
+                  }
                   outline-none transition-colors
                   text-sm md:text-base
                   disabled:bg-gray-100 disabled:cursor-not-allowed
@@ -406,12 +781,18 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
                 disabled={isLoading}
               />
               {errors.title && (
-                <span className="text-red-500 text-xs md:text-sm mt-1 block">{errors.title}</span>
+                <span className="text-red-500 text-xs md:text-sm mt-1 block">
+                  {errors.title}
+                </span>
               )}
             </div>
 
+            {/* File Input */}
             <div>
-              <label htmlFor="file" className="block text-sm md:text-base font-semibold text-gray-700 mb-2">
+              <label
+                htmlFor="file"
+                className="block text-sm md:text-base font-semibold text-gray-700 mb-2"
+              >
                 Select File <span className="text-red-500">*</span>
               </label>
               <input
@@ -419,11 +800,15 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
                 name="file"
                 type="file"
                 onChange={handleFileChange}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.bmp"
                 className={`
                   w-full px-3 md:px-4 py-2.5 md:py-3
                   rounded-lg md:rounded-xl
-                  border-2 ${errors.file ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-purple-500'}
+                  border-2 ${
+                    errors.file
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 focus:border-purple-500"
+                  }
                   outline-none transition-colors
                   text-sm md:text-base
                   file:mr-4 file:py-2 file:px-4
@@ -437,12 +822,17 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
               />
               {formData.file && (
                 <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm md:text-base text-green-700">
-                  📎 {formData.file.name} ({(formData.file.size / 1024).toFixed(2)} KB)
+                  📎 {formData.file.name} ({formatFileSize(formData.file.size)})
                 </div>
               )}
-              {errors.file && <span className="text-red-500 text-xs md:text-sm mt-1 block">{errors.file}</span>}
+              {errors.file && (
+                <span className="text-red-500 text-xs md:text-sm mt-1 block">
+                  {errors.file}
+                </span>
+              )}
             </div>
 
+            {/* Action Buttons */}
             <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
               <button
                 type="button"
@@ -500,6 +890,8 @@ const DocumentUploadModal = ({ isOpen, onClose, onUpload, isLoading }) => {
 // ============================================================
 // DOCUMENT ACTIONS MODAL
 // ============================================================
+// Quick actions menu for document operations
+// ============================================================
 
 const DocumentActionsModal = ({
   isOpen,
@@ -528,11 +920,12 @@ const DocumentActionsModal = ({
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Header */}
           <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
             <div className="text-4xl md:text-5xl">
               {getFileIcon(document.fileName)}
             </div>
-            <button 
+            <button
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               onClick={onClose}
             >
@@ -540,9 +933,14 @@ const DocumentActionsModal = ({
             </button>
           </div>
 
+          {/* Document Info */}
           <div className="p-4 md:p-6 space-y-3">
-            <h3 className="text-lg md:text-xl font-bold text-gray-800 break-words">{document.title}</h3>
-            <p className="text-sm md:text-base text-gray-600 break-all">{document.fileName}</p>
+            <h3 className="text-lg md:text-xl font-bold text-gray-800 break-words">
+              {document.title}
+            </h3>
+            <p className="text-sm md:text-base text-gray-600 break-all">
+              {document.fileName}
+            </p>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs md:text-sm font-medium">
                 <Calendar size={14} />
@@ -555,6 +953,7 @@ const DocumentActionsModal = ({
             </div>
           </div>
 
+          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3 p-4 md:p-6">
             <motion.button
               className="flex flex-col items-center gap-2 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors"
@@ -615,24 +1014,24 @@ const DocumentActionsModal = ({
 };
 
 // ============================================================
-// EDIT MODAL
+// DOCUMENT EDIT MODAL
+// ============================================================
+// Modal for editing document title
 // ============================================================
 
-const DocumentEditModal = ({
-  isOpen,
-  onClose,
-  document,
-  onUpdate,
-  isLoading,
-}) => {
+const DocumentEditModal = ({ isOpen, onClose, document, onUpdate, isLoading }) => {
   const [title, setTitle] = useState("");
 
+  // Set title when document changes
   useEffect(() => {
     if (document) {
       setTitle(document.title || "");
     }
   }, [document]);
 
+  /**
+   * Handle form submission
+   */
   const handleSubmit = (e) => {
     e.preventDefault();
     if (title.trim()) {
@@ -645,29 +1044,41 @@ const DocumentEditModal = ({
   return (
     <AnimatePresence>
       <motion.div
-        className="upload-modal-backdrop"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
         <motion.div
-          className="upload-modal-content"
+          className="bg-white rounded-2xl md:rounded-3xl shadow-2xl max-w-lg w-full"
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="upload-modal-header">
-            <h3>✏️ Edit Document</h3>
-            <button className="btn-close-modal" onClick={onClose}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
+            <h3 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+              ✏️ <span>Edit Document</span>
+            </h3>
+            <button
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={onClose}
+            >
               <X size={20} />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="upload-form">
-            <div className="form-field">
-              <label htmlFor="edit-title">Document Title *</label>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4">
+            <div>
+              <label
+                htmlFor="edit-title"
+                className="block text-sm md:text-base font-semibold text-gray-700 mb-2"
+              >
+                Document Title <span className="text-red-500">*</span>
+              </label>
               <input
                 id="edit-title"
                 name="title"
@@ -677,13 +1088,31 @@ const DocumentEditModal = ({
                 required
                 disabled={isLoading}
                 placeholder="Enter document title"
+                className="
+                  w-full px-3 md:px-4 py-2.5 md:py-3
+                  rounded-lg md:rounded-xl
+                  border-2 border-gray-300 focus:border-purple-500
+                  outline-none transition-colors
+                  text-sm md:text-base
+                  disabled:bg-gray-100 disabled:cursor-not-allowed
+                "
               />
             </div>
 
-            <div className="upload-modal-footer">
+            {/* Action Buttons */}
+            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
               <button
                 type="button"
-                className="btn-cancel-upload"
+                className="
+                  flex-1 px-4 md:px-6 py-2.5 md:py-3
+                  rounded-lg md:rounded-xl
+                  border-2 border-gray-300
+                  text-gray-700 font-semibold
+                  hover:bg-gray-50
+                  transition-colors
+                  text-sm md:text-base
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
                 onClick={onClose}
                 disabled={isLoading}
               >
@@ -691,10 +1120,31 @@ const DocumentEditModal = ({
               </button>
               <button
                 type="submit"
-                className="btn-submit-upload"
+                className="
+                  flex-1 flex items-center justify-center gap-2
+                  px-4 md:px-6 py-2.5 md:py-3
+                  rounded-lg md:rounded-xl
+                  bg-gradient-to-r from-purple-600 to-pink-600
+                  text-white font-semibold
+                  hover:from-purple-700 hover:to-pink-700
+                  shadow-lg hover:shadow-xl
+                  transition-all
+                  text-sm md:text-base
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
                 disabled={isLoading}
               >
-                {isLoading ? "Updating..." : "Update Document"}
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    Update Document
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -705,477 +1155,20 @@ const DocumentEditModal = ({
 };
 
 // ============================================================
-// DAIRY CONTENT COMPONENT (MINIMIZED)
+// PORTFOLIO CONTENT COMPONENT
 // ============================================================
-
-const DairyContent = () => {
-  const { success, error } = useToast();
-  const { currentUser } = useAuth();
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newEntry, setNewEntry] = useState({
-    title: "",
-    content: "",
-    date: new Date().toISOString().split("T")[0],
-  });
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const db = getDatabase();
-    const dairyRef = dbRef(db, `dairy/${currentUser.uid}`);
-
-    const unsubscribe = onValue(
-      dairyRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const entriesArray = Object.entries(data)
-            .map(([id, entry]) => ({ id, ...entry }))
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
-          setEntries(entriesArray);
-        } else {
-          setEntries([]);
-        }
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Error fetching dairy entries:", err);
-        error("Failed to load dairy entries");
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [currentUser, error]);
-
-  const handleAddEntry = async (e) => {
-    e.preventDefault();
-
-    if (!newEntry.title.trim() || !newEntry.content.trim()) {
-      error("Please fill in all fields");
-      return;
-    }
-
-    try {
-      const db = getDatabase();
-      const dairyRef = dbRef(db, `dairy/${currentUser.uid}`);
-      const newEntryRef = push(dairyRef);
-
-      await set(newEntryRef, {
-        ...newEntry,
-        createdAt: new Date().toISOString(),
-      });
-
-      success("Dairy entry added successfully!");
-      setShowAddModal(false);
-      setNewEntry({
-        title: "",
-        content: "",
-        date: new Date().toISOString().split("T")[0],
-      });
-    } catch (err) {
-      console.error("Error adding entry:", err);
-      error("Failed to add entry");
-    }
-  };
-
-  const handleDeleteEntry = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this entry?")) return;
-
-    try {
-      const db = getDatabase();
-      await remove(dbRef(db, `dairy/${currentUser.uid}/${id}`));
-      success("Entry deleted successfully!");
-    } catch (err) {
-      console.error("Error deleting entry:", err);
-      error("Failed to delete entry");
-    }
-  };
-
-  return (
-    <>
-      <motion.div
-        className="compact-dairy-container"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="compact-header">
-          <div className="compact-header-left">
-            <h2>
-              <BookOpen size={22} />
-              My Dairy
-            </h2>
-          </div>
-          <motion.button
-            className="btn-add-compact"
-            onClick={() => setShowAddModal(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Plus size={18} />
-            New Entry
-          </motion.button>
-        </div>
-
-        {loading ? (
-          <div className="loading-compact">
-            <div className="spinner-small"></div>
-            <p>Loading...</p>
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="empty-compact">
-            <BookOpen size={48} color="#94a3b8" />
-            <h3>No Entries Yet</h3>
-            <button
-              className="btn-empty-compact"
-              onClick={() => setShowAddModal(true)}
-            >
-              <Plus size={16} />
-              Create First Entry
-            </button>
-          </div>
-        ) : (
-          <div className="compact-dairy-grid">
-            <AnimatePresence>
-              {entries.map((entry, index) => (
-                <motion.div
-                  key={entry.id}
-                  className="compact-dairy-card"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ delay: index * 0.03 }}
-                >
-                  <div className="compact-entry-header">
-                    <h4>{entry.title}</h4>
-                    <button
-                      className="btn-delete-compact"
-                      onClick={() => handleDeleteEntry(entry.id)}
-                      title="Delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="compact-entry-date">
-                    <Calendar size={12} />
-                    {new Date(entry.date).toLocaleDateString()}
-                  </div>
-                  <div className="compact-entry-content">{entry.content}</div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </motion.div>
-
-      {/* Add Entry Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            className="modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowAddModal(false)}
-          >
-            <motion.div
-              className="modal-content compact-modal"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h3>
-                  <BookOpen size={20} />
-                  New Dairy Entry
-                </h3>
-                <button onClick={() => setShowAddModal(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <form onSubmit={handleAddEntry} className="compact-form">
-                <div className="form-group-compact">
-                  <label htmlFor="entry-date">Date</label>
-                  <input
-                    id="entry-date"
-                    type="date"
-                    value={newEntry.date}
-                    onChange={(e) =>
-                      setNewEntry({ ...newEntry, date: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group-compact">
-                  <label htmlFor="entry-title">Title</label>
-                  <input
-                    id="entry-title"
-                    type="text"
-                    placeholder="Entry title"
-                    value={newEntry.title}
-                    onChange={(e) =>
-                      setNewEntry({ ...newEntry, title: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group-compact">
-                  <label htmlFor="entry-content">Content</label>
-                  <textarea
-                    id="entry-content"
-                    rows="6"
-                    placeholder="Write your thoughts..."
-                    value={newEntry.content}
-                    onChange={(e) =>
-                      setNewEntry({ ...newEntry, content: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setShowAddModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    <Save size={16} />
-                    Save
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <style>{`
-        .compact-dairy-container {
-          padding: 1rem;
-          max-width: 1400px;
-          margin: 0 auto;
-        }
-
-        .compact-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.25rem;
-          flex-wrap: wrap;
-          gap: 0.75rem;
-        }
-
-        .compact-header-left h2 {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin: 0;
-          font-size: 1.5rem;
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .btn-add-compact {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          padding: 0.6rem 1.2rem;
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-        }
-
-        .btn-add-compact:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
-        }
-
-        .compact-dairy-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 1rem;
-        }
-
-        .compact-dairy-card {
-          background: white;
-          border-radius: 10px;
-          padding: 1rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          border: 1px solid #e2e8f0;
-          transition: all 0.2s ease;
-        }
-
-        .compact-dairy-card:hover {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          transform: translateY(-2px);
-        }
-
-        .compact-entry-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 0.5rem;
-        }
-
-        .compact-entry-header h4 {
-          margin: 0;
-          font-size: 1.05rem;
-          color: #1e293b;
-          flex: 1;
-        }
-
-        .btn-delete-compact {
-          background: transparent;
-          border: none;
-          color: #64748b;
-          cursor: pointer;
-          padding: 0.2rem;
-          border-radius: 4px;
-          transition: all 0.2s ease;
-        }
-
-        .btn-delete-compact:hover {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-
-        .compact-entry-date {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          color: #64748b;
-          font-size: 0.8rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .compact-entry-content {
-          color: #475569;
-          line-height: 1.5;
-          font-size: 0.9rem;
-          white-space: pre-wrap;
-          max-height: 150px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .loading-compact,
-        .empty-compact {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 2rem;
-          color: #64748b;
-          text-align: center;
-        }
-
-        .empty-compact h3 {
-          margin: 0.75rem 0 0.5rem 0;
-          color: #64748b;
-          font-size: 1.1rem;
-        }
-
-        .btn-empty-compact {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          margin-top: 1rem;
-          padding: 0.6rem 1.2rem;
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .compact-modal {
-          max-width: 550px;
-          width: 90%;
-        }
-
-        .compact-form {
-          padding: 1.25rem;
-        }
-
-        .form-group-compact {
-          margin-bottom: 1rem;
-        }
-
-        .form-group-compact label {
-          display: block;
-          margin-bottom: 0.4rem;
-          font-weight: 600;
-          color: #1e293b;
-          font-size: 0.9rem;
-        }
-
-        .form-group-compact input,
-        .form-group-compact textarea {
-          width: 100%;
-          padding: 0.65rem;
-          border: 1px solid #cbd5e1;
-          border-radius: 6px;
-          font-size: 0.95rem;
-          transition: all 0.2s ease;
-        }
-
-        .form-group-compact input:focus,
-        .form-group-compact textarea:focus {
-          outline: none;
-          border-color: #fbbf24;
-          box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
-        }
-
-        .form-group-compact textarea {
-          resize: vertical;
-          font-family: inherit;
-        }
-
-        @media (max-width: 768px) {
-          .compact-dairy-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .compact-header {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .btn-add-compact {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-      `}</style>
-    </>
-  );
-};
-
-// ============================================================
-// PORTFOLIO CONTENT (KEEP AS IS - ALREADY COMPACT)
+// Manages personal document portfolio with CRUD operations
 // ============================================================
 
 const PortfolioContent = ({ currentUser }) => {
   const { success, error } = useToast();
+  
+  // State management
   const [portfolioFiles, setPortfolioFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [showViewerModal, setShowViewerModal] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1189,6 +1182,9 @@ const PortfolioContent = ({ currentUser }) => {
 
   const uid = currentUser?.uid;
 
+  /**
+   * Load portfolio files from Firebase
+   */
   useEffect(() => {
     if (!uid) {
       setLoadingFiles(false);
@@ -1224,6 +1220,9 @@ const PortfolioContent = ({ currentUser }) => {
     return () => unsubscribe();
   }, [uid, error]);
 
+  /**
+   * Handle document upload
+   */
   const handleUpload = async (formData) => {
     setIsUploading(true);
     try {
@@ -1233,9 +1232,11 @@ const PortfolioContent = ({ currentUser }) => {
         `personalFiles/${uid}/${Date.now()}_${formData.file.name}`
       );
 
+      // Upload file to storage
       await uploadBytes(fileRef, formData.file);
       const url = await getDownloadURL(fileRef);
 
+      // Save metadata to database
       const db = getDatabase();
       const newDocRef = push(dbRef(db, `portfolioDocuments/${uid}`));
 
@@ -1258,6 +1259,9 @@ const PortfolioContent = ({ currentUser }) => {
     }
   };
 
+  /**
+   * Handle document update (edit title)
+   */
   const handleUpdate = async (docId, formData) => {
     setIsUpdating(true);
     try {
@@ -1279,19 +1283,27 @@ const PortfolioContent = ({ currentUser }) => {
     }
   };
 
+  /**
+   * Show delete confirmation dialog
+   */
   const handleDeleteClick = (document) => {
     setDeleteDialog({ isOpen: true, document });
   };
 
+  /**
+   * Confirm and execute document deletion
+   */
   const handleDeleteConfirm = async () => {
     const doc = deleteDialog.document;
     if (!doc) return;
 
     try {
+      // Delete from storage
       const storage = getStorage();
       const fileRef = storageRef(storage, doc.storagePath);
       await deleteObject(fileRef);
 
+      // Delete from database
       const db = getDatabase();
       await remove(dbRef(db, `portfolioDocuments/${uid}/${doc.id}`));
 
@@ -1303,59 +1315,66 @@ const PortfolioContent = ({ currentUser }) => {
     }
   };
 
+  /**
+   * Handle document card click - show actions modal
+   */
   const handleDocumentClick = (doc) => {
     setSelectedDocument(doc);
     setShowActionsModal(true);
   };
 
+  /**
+   * Open document viewer modal
+   */
   const handleViewFile = (doc) => {
-    const ext = doc.fileName.split(".").pop().toLowerCase();
-    if (["jpg", "jpeg", "png"].includes(ext)) {
-      setSelectedImage(doc.fileURL);
-    } else {
-      window.open(doc.fileURL, "_blank");
-    }
+    setViewingDocument(doc);
+    setShowViewerModal(true);
   };
 
+  /**
+   * Download file using Firebase Storage blob
+   * FIXED: Uses getBlob to avoid CORS issues
+   */
   const handleDownloadFile = async (doc) => {
     try {
-      success("Preparing download...");
+      success("Starting download...");
 
-      const response = await fetch(doc.fileURL, { mode: "cors" });
-      if (!response.ok) throw new Error("Failed to fetch file");
+      const storage = getStorage();
+      const fileRef = storageRef(storage, doc.storagePath);
 
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      // Get blob from Firebase Storage (bypasses CORS issues)
+      const blob = await getBlob(fileRef);
 
+      // Create blob URL
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Create and trigger download
       const link = document.createElement("a");
       link.href = blobUrl;
       link.download = doc.fileName || "download";
-      link.style.display = "none";
-
       document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-      }, 100);
+      // Clean up blob URL to prevent memory leaks
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 
       success("Download completed!");
     } catch (err) {
       console.error("Download error:", err);
-      error("Failed to download file. Please try again.");
-      try {
-        window.open(doc.fileURL, "_blank");
-      } catch (fallbackErr) {
-        console.error("Fallback download error:", fallbackErr);
-      }
+      error("Failed to download file: " + err.message);
     }
   };
 
-  const filteredDocuments = portfolioFiles.filter((doc) => {
-    const searchLower = searchTerm.toLowerCase();
-    return doc.title?.toLowerCase().includes(searchLower);
-  });
+  /**
+   * Filter documents based on search term
+   */
+  const filteredDocuments = useMemo(() => {
+    return portfolioFiles.filter((doc) => {
+      const searchLower = searchTerm.toLowerCase();
+      return doc.title?.toLowerCase().includes(searchLower);
+    });
+  }, [portfolioFiles, searchTerm]);
 
   return (
     <>
@@ -1365,13 +1384,15 @@ const PortfolioContent = ({ currentUser }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Header - Responsive */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl p-4 md:p-6 shadow-lg border border-purple-100">
           <div>
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
               💼 <span>Document Portfolio</span>
             </h2>
-            <p className="text-sm md:text-base text-gray-600 mt-1">Organize and manage your professional documents</p>
+            <p className="text-sm md:text-base text-gray-600 mt-1">
+              Organize and manage your professional documents
+            </p>
           </div>
           <motion.button
             className="
@@ -1390,12 +1411,12 @@ const PortfolioContent = ({ currentUser }) => {
             whileTap={{ scale: 0.98 }}
           >
             <Upload size={20} />
-            <span className="hidden xs:inline">Upload Document</span>
-            <span className="xs:hidden">Upload</span>
+            <span className="hidden sm:inline">Upload Document</span>
+            <span className="sm:hidden">Upload</span>
           </motion.button>
         </div>
 
-        {/* Search Bar - Responsive */}
+        {/* Search Bar */}
         <div className="relative bg-white rounded-xl md:rounded-2xl p-3 md:p-4 shadow-md border border-gray-200">
           <div className="flex items-center gap-3">
             <Search size={20} className="text-gray-400 flex-shrink-0" />
@@ -1417,12 +1438,14 @@ const PortfolioContent = ({ currentUser }) => {
           </div>
         </div>
 
-        {/* Documents Container - Responsive */}
+        {/* Documents Grid */}
         <div className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-6 lg:p-8 shadow-lg border border-gray-100 min-h-[400px]">
           {loadingFiles ? (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
               <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-              <p className="text-gray-600 text-base md:text-lg">Loading documents...</p>
+              <p className="text-gray-600 text-base md:text-lg">
+                Loading documents...
+              </p>
             </div>
           ) : filteredDocuments.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center px-4">
@@ -1492,8 +1515,13 @@ const PortfolioContent = ({ currentUser }) => {
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs md:text-sm text-gray-500">
-                      <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
-                      <MoreVertical size={16} className="text-gray-400 group-hover:text-purple-600 transition-colors" />
+                      <span>
+                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                      </span>
+                      <MoreVertical
+                        size={16}
+                        className="text-gray-400 group-hover:text-purple-600 transition-colors"
+                      />
                     </div>
                   </motion.div>
                 ))}
@@ -1503,6 +1531,7 @@ const PortfolioContent = ({ currentUser }) => {
         </div>
       </motion.div>
 
+      {/* Modals */}
       <DocumentUploadModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
@@ -1532,33 +1561,11 @@ const PortfolioContent = ({ currentUser }) => {
         isLoading={isUpdating}
       />
 
-      <AnimatePresence>
-        {selectedImage && (
-          <motion.div
-            className="image-preview-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedImage(null)}
-          >
-            <motion.div
-              className="image-preview-container"
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img src={selectedImage} alt="Preview" />
-              <button
-                className="btn-close-preview"
-                onClick={() => setSelectedImage(null)}
-              >
-                <X size={24} />
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <DocumentViewerModal
+        isOpen={showViewerModal}
+        onClose={() => setShowViewerModal(false)}
+        document={viewingDocument}
+      />
 
       <ConfirmationDialog
         isOpen={deleteDialog.isOpen}
@@ -1574,14 +1581,17 @@ const PortfolioContent = ({ currentUser }) => {
 // ============================================================
 // MAIN DASHBOARD COMPONENT
 // ============================================================
+// Central dashboard with navigation and content management
+// ============================================================
 
 const Dashboard = () => {
   const { currentUser, userRole, userName, logout } = useAuth();
   const navigate = useNavigate();
   const { error, info, success } = useToast();
 
+  // State management
   const [activeTab, setActiveTab] = useState("overview");
-  const [statusFilter, setStatusFilter] = useState(null); // NEW: for filtering by status
+  const [statusFilter, setStatusFilter] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -1591,6 +1601,9 @@ const Dashboard = () => {
     completedFiles: 0,
   });
 
+  /**
+   * Load files from Firebase and calculate statistics
+   */
   useEffect(() => {
     if (!currentUser || !userRole) return;
 
@@ -1605,6 +1618,7 @@ const Dashboard = () => {
           ? Object.entries(data).map(([id, file]) => ({ id, ...file }))
           : [];
 
+        // Filter files for subadmin users
         if (userRole === "subadmin") {
           filesData = filesData.filter(
             (file) => file.uploadedBy === currentUser.uid
@@ -1625,6 +1639,9 @@ const Dashboard = () => {
     return () => unsubscribe();
   }, [currentUser, userRole, error]);
 
+  /**
+   * Calculate dashboard statistics
+   */
   const updateStats = (filesArray) => {
     const totalFiles = filesArray.length;
     const pendingFiles = filesArray.filter(
@@ -1637,6 +1654,9 @@ const Dashboard = () => {
     setStats({ totalFiles, pendingFiles, completedFiles });
   };
 
+  /**
+   * Handle user logout
+   */
   const handleLogout = async () => {
     try {
       await logout();
@@ -1648,6 +1668,9 @@ const Dashboard = () => {
     }
   };
 
+  /**
+   * Confirm logout action
+   */
   const confirmLogout = async () => {
     try {
       await handleLogout();
@@ -1656,7 +1679,9 @@ const Dashboard = () => {
     }
   };
 
-  // NEW: Handler for clicking stat cards
+  /**
+   * Handle stat card click to filter files
+   */
   const handleStatCardClick = (filterType) => {
     setStatusFilter(filterType);
     setActiveTab("RecordsView");
@@ -1671,12 +1696,15 @@ const Dashboard = () => {
     );
   };
 
-  // NEW: Handler to clear filter
+  /**
+   * Clear active filter
+   */
   const handleClearFilter = () => {
     setStatusFilter(null);
     success("Filter cleared");
   };
 
+  // Animation variants for stat cards
   const cardVariants = {
     hidden: { opacity: 0, y: 40 },
     visible: (i) => ({
@@ -1691,21 +1719,11 @@ const Dashboard = () => {
     },
   };
 
-  const actionVariants = {
-    hover: {
-      scale: 1.03,
-      backgroundColor: "#f5f7fa",
-      transition: { duration: 0.2 },
-    },
-    tap: { scale: 0.98, backgroundColor: "#eacdff" },
-  };
-
-  const OverviewContent = ({
-    stats,
-    loading,
-    setActiveTab,
-    onStatCardClick,
-  }) => {
+  /**
+   * Overview Content Component
+   * Dashboard home screen with statistics and quick actions
+   */
+  const OverviewContent = ({ stats, loading, setActiveTab, onStatCardClick }) => {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
@@ -1715,6 +1733,7 @@ const Dashboard = () => {
       );
     }
 
+    // Stat card configuration
     const statCards = [
       {
         gradient: "from-blue-500 to-blue-600",
@@ -1722,7 +1741,10 @@ const Dashboard = () => {
         icon: "📁",
         value: stats.totalFiles,
         label: "Total Files",
-        desc: userRole === "admin" ? "All uploaded documents" : "Your uploaded documents",
+        desc:
+          userRole === "admin"
+            ? "All uploaded documents"
+            : "Your uploaded documents",
         filterType: "all",
       },
       {
@@ -1747,7 +1769,7 @@ const Dashboard = () => {
 
     return (
       <div className="space-y-6 md:space-y-8">
-        {/* Stats Grid - Responsive */}
+        {/* Statistics Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {statCards.map((item, i) => (
             <motion.div
@@ -1779,18 +1801,22 @@ const Dashboard = () => {
               {/* Content */}
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-3 md:mb-4">
-                  <div className={`
+                  <div
+                    className={`
                     text-4xl md:text-5xl lg:text-6xl
                     transform group-hover:scale-110 transition-transform duration-300
-                  `}>
+                  `}
+                  >
                     {item.icon}
                   </div>
-                  <div className={`
+                  <div
+                    className={`
                     px-3 py-1 rounded-full
                     bg-gradient-to-r ${item.gradient}
                     text-white text-xs md:text-sm font-bold
                     shadow-md
-                  `}>
+                  `}
+                  >
                     {item.value}
                   </div>
                 </div>
@@ -1803,22 +1829,26 @@ const Dashboard = () => {
                 </p>
 
                 {/* Click Hint */}
-                <div className="
+                <div
+                  className="
                   mt-3 md:mt-4 flex items-center gap-2
                   text-xs md:text-sm font-semibold
                   text-purple-600 opacity-0 group-hover:opacity-100
                   transform translate-y-2 group-hover:translate-y-0
                   transition-all duration-300
-                ">
+                "
+                >
                   <span>View Details</span>
-                  <span className="transform group-hover:translate-x-1 transition-transform">→</span>
+                  <span className="transform group-hover:translate-x-1 transition-transform">
+                    →
+                  </span>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Quick Actions - Responsive */}
+        {/* Quick Actions Section */}
         <div className="bg-white rounded-2xl md:rounded-3xl p-5 md:p-6 lg:p-8 shadow-lg border border-gray-100">
           <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-center mb-4 md:mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             Quick Actions
@@ -1838,7 +1868,8 @@ const Dashboard = () => {
                 shadow-md hover:shadow-xl
               "
             >
-              <div className="
+              <div
+                className="
                 flex items-center justify-center
                 w-12 h-12 md:w-16 md:h-16
                 rounded-xl md:rounded-2xl
@@ -1847,7 +1878,8 @@ const Dashboard = () => {
                 shadow-lg
                 transform group-hover:scale-110 group-hover:rotate-3
                 transition-all duration-300
-              ">
+              "
+              >
                 📤
               </div>
               <div className="text-left flex-1">
@@ -1874,7 +1906,8 @@ const Dashboard = () => {
                 shadow-md hover:shadow-xl
               "
             >
-              <div className="
+              <div
+                className="
                 flex items-center justify-center
                 w-12 h-12 md:w-16 md:h-16
                 rounded-xl md:rounded-2xl
@@ -1883,7 +1916,8 @@ const Dashboard = () => {
                 shadow-lg
                 transform group-hover:scale-110 group-hover:rotate-3
                 transition-all duration-300
-              ">
+              "
+              >
                 📋
               </div>
               <div className="text-left flex-1">
@@ -1901,6 +1935,9 @@ const Dashboard = () => {
     );
   };
 
+  /**
+   * File Management Content Component
+   */
   const FileManagementContent = () => {
     return (
       <div className="file-management-content">
@@ -1909,6 +1946,9 @@ const Dashboard = () => {
     );
   };
 
+  /**
+   * Render appropriate content based on active tab
+   */
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
@@ -1929,7 +1969,8 @@ const Dashboard = () => {
         return (
           <div className="space-y-4">
             {statusFilter && (
-              <div className="
+              <div
+                className="
                 flex flex-col sm:flex-row sm:items-center sm:justify-between
                 gap-3 sm:gap-4
                 p-4 md:p-5
@@ -1937,7 +1978,8 @@ const Dashboard = () => {
                 border-2 border-purple-200
                 rounded-xl md:rounded-2xl
                 shadow-md
-              ">
+              "
+              >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl md:text-3xl">
                     {statusFilter === "all" && "📁"}
@@ -1987,14 +2029,26 @@ const Dashboard = () => {
         return userRole === "admin" ? (
           <PortfolioContent currentUser={currentUser} />
         ) : (
-          <div className="access-denied">Access Denied</div>
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+            <div className="text-6xl">🔒</div>
+            <h3 className="text-2xl font-bold text-gray-800">Access Denied</h3>
+            <p className="text-gray-600">
+              This feature is only available to administrators.
+            </p>
+          </div>
         );
 
       case "users":
         return userRole === "admin" ? (
           <UserManagement showToast={{ success, error, info }} />
         ) : (
-          <div className="access-denied">Access Denied</div>
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+            <div className="text-6xl">🔒</div>
+            <h3 className="text-2xl font-bold text-gray-800">Access Denied</h3>
+            <p className="text-gray-600">
+              This feature is only available to administrators.
+            </p>
+          </div>
         );
 
       default:
@@ -2012,7 +2066,7 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      {/* Sidebar Component */}
+      {/* Sidebar Navigation */}
       <Sidebar
         userRole={userRole}
         userName={userName}
@@ -2021,7 +2075,7 @@ const Dashboard = () => {
         setActiveTab={(tab) => {
           setActiveTab(tab);
           if (tab !== "RecordsView") {
-            setStatusFilter(null); // Clear filter when changing tabs
+            setStatusFilter(null);
           }
         }}
         onLogoutClick={() => setLogoutDialogOpen(true)}
@@ -2029,21 +2083,23 @@ const Dashboard = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header - Responsive */}
+        {/* Header */}
         <header className="bg-white/80 backdrop-blur-sm border-b border-purple-100 px-4 md:px-6 lg:px-8 py-3 md:py-4 sticky top-0 z-10 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <h1 className="flex items-center gap-2 md:gap-3 text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               <LayoutDashboard className="text-purple-600" size={24} />
-              <span className="hidden xs:inline">Dashboard</span>
+              <span className="hidden sm:inline">Dashboard</span>
             </h1>
             <p className="text-sm md:text-base text-gray-600">
               Welcome back,{" "}
-              <strong className="text-gray-800">{userName || currentUser?.email?.split("@")[0]}</strong>
+              <strong className="text-gray-800">
+                {userName || currentUser?.email?.split("@")[0]}
+              </strong>
             </p>
           </div>
         </header>
 
-        {/* Main Content - Responsive Padding */}
+        {/* Main Content */}
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
           {renderContent()}
         </main>
@@ -2055,109 +2111,14 @@ const Dashboard = () => {
         onCancel={() => setLogoutDialogOpen(false)}
         onConfirm={confirmLogout}
       />
-
-      {/* Additional Styles for New Features */}
-      <style>{`
-        .clickable-stat-card {
-          position: relative;
-          transition: all 0.3s ease;
-        }
-
-        .stat-click-hint {
-          position: absolute;
-          bottom: 0.75rem;
-          right: 1rem;
-          font-size: 0.75rem;
-          color: var(--purple-400);
-          font-weight: 600;
-          opacity: 0;
-          transition: opacity 0.2s ease;
-        }
-
-        .clickable-stat-card:hover .stat-click-hint {
-          opacity: 1;
-        }
-
-        .records-view-wrapper {
-          position: relative;
-        }
-
-        .filter-banner {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          background: linear-gradient(135deg, var(--purple-100), var(--pink-100));
-          border: 2px solid var(--purple-200);
-          border-radius: 12px;
-          margin-bottom: 1.5rem;
-          box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
-        }
-
-        .filter-info {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-
-        .filter-icon {
-          font-size: 1.5rem;
-          filter: drop-shadow(0 2px 4px rgba(168, 85, 247, 0.3));
-        }
-
-        .filter-text {
-          font-size: 0.95rem;
-          color: var(--gray-700);
-        }
-
-        .filter-text strong {
-          color: var(--purple-600);
-          font-weight: 700;
-        }
-
-        .btn-clear-filter {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          background: white;
-          border: 2px solid var(--purple-300);
-          border-radius: 8px;
-          color: var(--purple-600);
-          font-weight: 600;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-clear-filter:hover {
-          background: var(--purple-50);
-          border-color: var(--purple-400);
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(168, 85, 247, 0.2);
-        }
-
-        @media (max-width: 768px) {
-          .filter-banner {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: stretch;
-          }
-
-          .btn-clear-filter {
-            width: 100%;
-            justify-content: center;
-          }
-
-          .stat-click-hint {
-            display: none;
-          }
-        }
-      `}</style>
     </div>
   );
 };
 
+/**
+ * Dashboard with Toast Provider Wrapper
+ * Exports the dashboard wrapped in toast notification provider
+ */
 const DashboardWithToast = () => {
   return (
     <ToastProvider>
